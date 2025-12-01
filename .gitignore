@@ -1,16 +1,46 @@
 # Uploads dan file dinamis
 uploads/
-assets/img/temp/
 
-# File konfigurasi sensitif
+# Environment / secrets
 .env
-config/secret-config.php
+.env.* 
 
-# Log dan cache
+# Dependency folders
+vendor/
+node_modules/
+
+# Logs, cache, DB dumps
 *.log
-*.tmp
+cache/
+tmp/
+*.sql
+*.sqlite
+*.db
+*.bak
+*.zip
 
-# Editor & OS artifacts
+# Build artifacts
+dist/
+build/
+
+# Editor & IDE
+.vscode/
+.idea/
+
+# OS files
 .DS_Store
 Thumbs.db
-.vscode/
+
+# Temp/backup/editors
+*~
+*.swp
+
+# Keys / certs
+*.pem
+*.key
+*.crt
+
+# Tooling
+composer.phar
+npm-debug.log
+yarn-error.log
