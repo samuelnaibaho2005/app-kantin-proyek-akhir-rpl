@@ -1,0 +1,16 @@
+# Uploads dan file dinamis
+uploads/
+assets/img/temp/
+
+# File konfigurasi sensitif
+.env
+config/secret-config.php
+
+# Log dan cache
+*.log
+*.tmp
+
+# Editor & OS artifacts
+.DS_Store
+Thumbs.db
+.vscode/
