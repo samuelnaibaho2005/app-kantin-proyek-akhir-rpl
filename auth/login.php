@@ -3,7 +3,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Redirect jika sudah login
 if (isLoggedIn()) {
-    $redirect = hasRole('kantin') ? '/kantin-kampus/dashboard/kantin.php' : '/kantin-kampus/dashboard/customer.php';
+    $redirect = hasRole('kantin') ? '/proyek-akhir-kantin-rpl/dashboard/kantin.php' : '/proyek-akhir-kantin-rpl/dashboard/customer.php';
     redirect($redirect);
 }
 
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Redirect berdasarkan role
                 setFlashMessage('success', 'Login berhasil! Selamat datang, ' . $user['name']);
-                $redirect = ($user['role'] === 'kantin') ? '/kantin-kampus/dashboard/kantin.php' : '/kantin-kampus/dashboard/customer.php';
+                $redirect = ($user['role'] === 'kantin') ? '/proyek-akhir-kantin-rpl/dashboard/kantin.php' : '/proyek-akhir-kantin-rpl/dashboard/customer.php';
                 redirect($redirect);
             } else {
                 $error = 'Password salah';
@@ -62,11 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Login - Kantin Kampus</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="/kantin-kampus/assets/css/style.css">
+    <link rel="stylesheet" href="/proyek-akhir-kantin-rpl/assets/css/style.css">
 </head>
 <body>
 
-<div class="auth-wrapper">
+<div class="auth-wrapper p-5">
     <div class="auth-card">
         <div class="card">
             <div class="card-header">
@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 Ingat saya
                             </label>
                         </div>
-                        <a href="/kantin-kampus/auth/forgot-password.php" class="text-decoration-none small">
+                        <a href="/proyek-akhir-kantin-rpl/auth/forgot-password.php" class="text-decoration-none small">
                             Lupa password?
                         </a>
                     </div>
@@ -126,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="text-center">
                     <p class="mb-0 text-muted">Belum punya akun?</p>
-                    <a href="/kantin-kampus/auth/register.php" class="btn btn-outline-primary w-100 mt-2">
+                    <a href="/proyek-akhir-kantin-rpl/auth/register.php" class="btn btn-outline-primary w-100 mt-2">
                         <i class="bi bi-person-plus"></i> Daftar Sekarang
                     </a>
                 </div>

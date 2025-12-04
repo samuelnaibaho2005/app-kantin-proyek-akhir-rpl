@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Cek login
 if (!isLoggedIn() || hasRole('kantin')) {
-    redirect('/kantin-kampus/auth/login.php');
+    redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 require_once __DIR__ . '/../includes/header.php';
@@ -29,7 +29,7 @@ if (isset($_GET['id'])) {
     
     if ($order_result->num_rows === 0) {
         setFlashMessage('error', 'Pesanan tidak ditemukan');
-        redirect('/kantin-kampus/order/status.php');
+        redirect('/proyek-akhir-kantin-rpl/order/status.php');
     }
     
     $order = $order_result->fetch_assoc();
@@ -52,8 +52,8 @@ if (isset($_GET['id'])) {
             <h2><i class="bi bi-receipt"></i> Detail Pesanan</h2>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/kantin-kampus/dashboard/customer.php">Home</a></li>
-                    <li class="breadcrumb-item"><a href="/kantin-kampus/order/status.php">Pesanan Saya</a></li>
+                    <li class="breadcrumb-item"><a href="/proyek-akhir-kantin-rpl/dashboard/customer.php">Home</a></li>
+                    <li class="breadcrumb-item"><a href="/proyek-akhir-kantin-rpl/order/status.php">Pesanan Saya</a></li>
                     <li class="breadcrumb-item active">Detail</li>
                 </ol>
             </nav>
@@ -131,7 +131,7 @@ if (isset($_GET['id'])) {
                         <div class="row align-items-center mb-3 pb-3 border-bottom">
                             <div class="col-md-2">
                                 <?php if ($item['image_url']): ?>
-                                    <img src="/kantin-kampus/uploads/menus/<?php echo htmlspecialchars($item['image_url']); ?>" 
+                                    <img src="/proyek-akhir-kantin-rpl/uploads/menus/<?php echo htmlspecialchars($item['image_url']); ?>" 
                                          class="img-fluid rounded" alt="<?php echo htmlspecialchars($item['menu_name']); ?>">
                                 <?php else: ?>
                                     <div class="bg-secondary d-flex align-items-center justify-content-center rounded" 
@@ -226,7 +226,7 @@ if (isset($_GET['id'])) {
                 </div>
             <?php endif; ?>
             
-            <a href="/kantin-kampus/order/status.php" class="btn btn-outline-primary w-100">
+            <a href="/proyek-akhir-kantin-rpl/order/status.php" class="btn btn-outline-primary w-100">
                 <i class="bi bi-arrow-left"></i> Kembali ke Riwayat
             </a>
         </div>
@@ -304,7 +304,7 @@ if (isset($_GET['id'])) {
                                     <small class="text-muted">Total</small>
                                     <h5 class="mb-0 text-success"><?php echo formatRupiah($order['total_amount']); ?></h5>
                                 </div>
-                                <a href="/kantin-kampus/order/status.php?id=<?php echo $order['id']; ?>" 
+                                <a href="/proyek-akhir-kantin-rpl/order/status.php?id=<?php echo $order['id']; ?>" 
                                    class="btn btn-primary btn-sm">
                                     Lihat Detail <i class="bi bi-arrow-right"></i>
                                 </a>
@@ -321,7 +321,7 @@ if (isset($_GET['id'])) {
                     <i class="bi bi-inbox"></i>
                     <h5>Belum Ada Pesanan</h5>
                     <p>Anda belum pernah melakukan pesanan</p>
-                    <a href="/kantin-kampus/menu/index.php" class="btn btn-primary mt-3">
+                    <a href="/proyek-akhir-kantin-rpl/menu/index.php" class="btn btn-primary mt-3">
                         <i class="bi bi-grid"></i> Lihat Menu
                     </a>
                 </div>

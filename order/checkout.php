@@ -4,13 +4,13 @@ require_once __DIR__ . '/../config/database.php';
 
 // Cek login
 if (!isLoggedIn() || hasRole('kantin')) {
-    redirect('/kantin-kampus/auth/login.php');
+    redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 // Cek cart
 if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
     setFlashMessage('error', 'Keranjang Anda kosong');
-    redirect('/kantin-kampus/menu/index.php');
+    redirect('/proyek-akhir-kantin-rpl/menu/index.php');
 }
 
 $conn = getDBConnection();
@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Redirect ke status pesanan
             setFlashMessage('success', 'Pesanan berhasil dibuat! Nomor order: ' . $order_number);
-            redirect('/kantin-kampus/order/status.php?id=' . $order_id);
+            redirect('/proyek-akhir-kantin-rpl/order/status.php?id=' . $order_id);
             
         } catch (Exception $e) {
             // Rollback jika ada error
@@ -156,7 +156,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <div class="row align-items-center mb-3 pb-3 border-bottom">
                             <div class="col-md-2">
                                 <?php if ($item['image_url']): ?>
-                                    <img src="/kantin-kampus/uploads/menus/<?php echo htmlspecialchars($item['image_url']); ?>" 
+                                    <img src="/proyek-akhir-kantin-rpl/uploads/menus/<?php echo htmlspecialchars($item['image_url']); ?>" 
                                          class="img-fluid rounded" alt="<?php echo htmlspecialchars($item['name']); ?>">
                                 <?php else: ?>
                                     <div class="bg-secondary d-flex align-items-center justify-content-center rounded" 
@@ -288,7 +288,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <i class="bi bi-check-circle"></i> Konfirmasi Pesanan
                     </button>
                     
-                    <a href="/kantin-kampus/order/cart.php" class="btn btn-outline-secondary w-100 mt-2">
+                    <a href="/proyek-akhir-kantin-rpl/order/cart.php" class="btn btn-outline-secondary w-100 mt-2">
                         <i class="bi bi-arrow-left"></i> Kembali ke Keranjang
                     </a>
                     

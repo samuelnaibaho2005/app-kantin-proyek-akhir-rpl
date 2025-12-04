@@ -3,7 +3,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Redirect jika sudah login
 if (isLoggedIn()) {
-    $redirect = hasRole('kantin') ? '/kantin-kampus/dashboard/kantin.php' : '/kantin-kampus/dashboard/customer.php';
+    $redirect = hasRole('kantin') ? '/proyek-akhir-kantin-rpl/dashboard/kantin.php' : '/proyek-akhir-kantin-rpl/dashboard/customer.php';
     redirect($redirect);
 }
 
@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Registrasi - Kantin Kampus</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="/kantin-kampus/assets/css/style.css">
+    <link rel="stylesheet" href="/proyek-akhir-kantin-rpl/assets/css/style.css">
 </head>
 <body>
 
@@ -126,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php if (!empty($success)): ?>
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <i class="bi bi-check-circle"></i> <?php echo $success; ?>
-                        <a href="/kantin-kampus/auth/login.php" class="alert-link">Login sekarang</a>
+                        <a href="/proyek-akhir-kantin-rpl/auth/login.php" class="alert-link">Login sekarang</a>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
@@ -209,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div class="text-center">
                     <p class="mb-0 text-muted">Sudah punya akun?</p>
-                    <a href="/kantin-kampus/auth/login.php" class="btn btn-outline-primary w-100 mt-2">
+                    <a href="/proyek-akhir-kantin-rpl/auth/login.php" class="btn btn-outline-primary w-100 mt-2">
                         <i class="bi bi-box-arrow-in-right"></i> Login
                     </a>
                 </div>

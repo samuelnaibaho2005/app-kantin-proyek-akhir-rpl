@@ -20,7 +20,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/kantin-kampus/assets/css/style.css">
+    <link rel="stylesheet" href="/proyek-akhir-kantin-rpl/assets/css/style.css">
     
     <!-- Chart.js untuk grafik -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -30,7 +30,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
     <div class="container">
-        <a class="navbar-brand" href="/kantin-kampus/index.php">
+        <a class="navbar-brand" href="/proyek-akhir-kantin-rpl/index.php">
             <i class="bi bi-shop"></i> Kantin Kampus
         </a>
         
@@ -45,25 +45,25 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                         <!-- Menu untuk Kantin -->
                         <li class="nav-item">
                             <a class="nav-link <?php echo $current_page == 'kantin' ? 'active' : ''; ?>" 
-                               href="/kantin-kampus/dashboard/kantin.php">
+                               href="/proyek-akhir-kantin-rpl/dashboard/kantin.php">
                                 <i class="bi bi-speedometer2"></i> Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link <?php echo $current_page == 'manage' ? 'active' : ''; ?>" 
-                               href="/kantin-kampus/menu/manage.php">
+                               href="/proyek-akhir-kantin-rpl/menu/manage.php">
                                 <i class="bi bi-card-list"></i> Kelola Menu
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link <?php echo in_array($current_page, ['manage', 'order']) ? 'active' : ''; ?>" 
-                               href="/kantin-kampus/order/manage.php">
+                               href="/proyek-akhir-kantin-rpl/order/manage.php">
                                 <i class="bi bi-receipt"></i> Pesanan
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link <?php echo $current_page == 'index' && strpos($_SERVER['PHP_SELF'], 'transaction') !== false ? 'active' : ''; ?>" 
-                               href="/kantin-kampus/transaction/index.php">
+                               href="/proyek-akhir-kantin-rpl/transaction/index.php">
                                 <i class="bi bi-cash-stack"></i> Keuangan
                             </a>
                         </li>
@@ -71,19 +71,19 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                         <!-- Menu untuk Customer (Mahasiswa/Staf) -->
                         <li class="nav-item">
                             <a class="nav-link <?php echo $current_page == 'customer' ? 'active' : ''; ?>" 
-                               href="/kantin-kampus/dashboard/customer.php">
+                               href="/proyek-akhir-kantin-rpl/dashboard/customer.php">
                                 <i class="bi bi-house"></i> Home
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link <?php echo $current_page == 'index' && strpos($_SERVER['PHP_SELF'], 'menu') !== false ? 'active' : ''; ?>" 
-                               href="/kantin-kampus/menu/index.php">
+                               href="/proyek-akhir-kantin-rpl/menu/index.php">
                                 <i class="bi bi-grid"></i> Menu
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link <?php echo $current_page == 'status' ? 'active' : ''; ?>" 
-                               href="/kantin-kampus/order/status.php">
+                               href="/proyek-akhir-kantin-rpl/order/status.php">
                                 <i class="bi bi-clock-history"></i> Pesanan Saya
                             </a>
                         </li>
@@ -94,7 +94,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                     <?php if (!hasRole('kantin')): ?>
                         <!-- Shopping Cart untuk Customer -->
                         <li class="nav-item">
-                            <a class="nav-link position-relative" href="/kantin-kampus/order/cart.php">
+                            <a class="nav-link position-relative" href="/proyek-akhir-kantin-rpl/order/cart.php">
                                 <i class="bi bi-cart3 fs-5"></i>
                                 <?php if (isset($_SESSION['cart']) && count($_SESSION['cart']) > 0): ?>
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
@@ -113,13 +113,13 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
-                                <a class="dropdown-item" href="/kantin-kampus/profile/index.php">
+                                <a class="dropdown-item" href="/proyek-akhir-kantin-rpl/profile/index.php">
                                     <i class="bi bi-person"></i> Profil
                                 </a>
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <a class="dropdown-item text-danger" href="/kantin-kampus/auth/logout.php">
+                                <a class="dropdown-item text-danger" href="/proyek-akhir-kantin-rpl/auth/logout.php">
                                     <i class="bi bi-box-arrow-right"></i> Logout
                                 </a>
                             </li>
@@ -130,12 +130,12 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                 <!-- Menu untuk Guest -->
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/kantin-kampus/auth/login.php">
+                        <a class="nav-link" href="/proyek-akhir-kantin-rpl/auth/login.php">
                             <i class="bi bi-box-arrow-in-right"></i> Login
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/kantin-kampus/auth/register.php">
+                        <a class="nav-link" href="/proyek-akhir-kantin-rpl/auth/register.php">
                             <i class="bi bi-person-plus"></i> Registrasi
                         </a>
                     </li>

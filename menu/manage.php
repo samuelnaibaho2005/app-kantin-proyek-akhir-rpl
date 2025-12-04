@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Cek login dan role
 if (!isLoggedIn() || !hasRole('kantin')) {
-    redirect('/kantin-kampus/auth/login.php');
+    redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 require_once __DIR__ . '/../includes/header.php';
@@ -60,7 +60,7 @@ $conn->close();
         <p class="text-muted">Tambah, edit, atau hapus menu makanan dan minuman</p>
     </div>
     <div class="col-auto">
-        <a href="/kantin-kampus/menu/create.php" class="btn btn-primary">
+        <a href="/proyek-akhir-kantin-rpl/menu/create.php" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Tambah Menu Baru
         </a>
     </div>
@@ -137,7 +137,7 @@ $conn->close();
                             <tr>
                                 <td>
                                     <?php if ($menu['image_url']): ?>
-                                        <img src="/kantin-kampus/uploads/menus/<?php echo htmlspecialchars($menu['image_url']); ?>" 
+                                        <img src="/proyek-akhir-kantin-rpl/uploads/menus/<?php echo htmlspecialchars($menu['image_url']); ?>" 
                                              class="img-thumbnail" 
                                              style="width: 60px; height: 60px; object-fit: cover;">
                                     <?php else: ?>
@@ -176,7 +176,7 @@ $conn->close();
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <a href="/kantin-kampus/menu/edit.php?id=<?php echo $menu['id']; ?>" 
+                                        <a href="/proyek-akhir-kantin-rpl/menu/edit.php?id=<?php echo $menu['id']; ?>" 
                                            class="btn btn-outline-primary" title="Edit">
                                             <i class="bi bi-pencil"></i>
                                         </a>
@@ -187,7 +187,7 @@ $conn->close();
                                                 title="Toggle Status">
                                             <i class="bi bi-<?php echo $menu['is_available'] ? 'eye-slash' : 'eye'; ?>"></i>
                                         </button>
-                                        <a href="/kantin-kampus/menu/delete.php?id=<?php echo $menu['id']; ?>" 
+                                        <a href="/proyek-akhir-kantin-rpl/menu/delete.php?id=<?php echo $menu['id']; ?>" 
                                            class="btn btn-outline-danger delete-menu" 
                                            title="Hapus"
                                            onclick="return confirm('Yakin ingin menghapus menu ini?')">
@@ -205,7 +205,7 @@ $conn->close();
                 <i class="bi bi-inbox"></i>
                 <h5>Tidak Ada Menu</h5>
                 <p>Belum ada menu yang ditambahkan atau tidak ada yang sesuai filter</p>
-                <a href="/kantin-kampus/menu/create.php" class="btn btn-primary mt-3">
+                <a href="/proyek-akhir-kantin-rpl/menu/create.php" class="btn btn-primary mt-3">
                     <i class="bi bi-plus-circle"></i> Tambah Menu
                 </a>
             </div>
@@ -224,7 +224,7 @@ $conn->close();
                 // Create form and submit
                 const form = document.createElement('form');
                 form.method = 'POST';
-                form.action = '/kantin-kampus/menu/edit.php?id=' + menuId;
+                form.action = '/proyek-akhir-kantin-rpl/menu/edit.php?id=' + menuId;
                 
                 const statusInput = document.createElement('input');
                 statusInput.type = 'hidden';

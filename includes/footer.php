@@ -13,17 +13,17 @@
                 <ul class="list-unstyled">
                     <?php if (isLoggedIn()): ?>
                         <?php if (hasRole('kantin')): ?>
-                            <li><a href="/kantin-kampus/dashboard/kantin.php" class="text-muted text-decoration-none">Dashboard</a></li>
-                            <li><a href="/kantin-kampus/menu/manage.php" class="text-muted text-decoration-none">Kelola Menu</a></li>
-                            <li><a href="/kantin-kampus/transaction/index.php" class="text-muted text-decoration-none">Keuangan</a></li>
+                            <li><a href="/proyek-akhir-kantin-rpl/dashboard/kantin.php" class="text-muted text-decoration-none">Dashboard</a></li>
+                            <li><a href="/proyek-akhir-kantin-rpl/menu/manage.php" class="text-muted text-decoration-none">Kelola Menu</a></li>
+                            <li><a href="/proyek-akhir-kantin-rpl/transaction/index.php" class="text-muted text-decoration-none">Keuangan</a></li>
                         <?php else: ?>
-                            <li><a href="/kantin-kampus/menu/index.php" class="text-muted text-decoration-none">Menu</a></li>
-                            <li><a href="/kantin-kampus/order/status.php" class="text-muted text-decoration-none">Pesanan Saya</a></li>
+                            <li><a href="/proyek-akhir-kantin-rpl/menu/index.php" class="text-muted text-decoration-none">Menu</a></li>
+                            <li><a href="/proyek-akhir-kantin-rpl/order/status.php" class="text-muted text-decoration-none">Pesanan Saya</a></li>
                         <?php endif; ?>
-                        <li><a href="/kantin-kampus/profile/index.php" class="text-muted text-decoration-none">Profil</a></li>
+                        <li><a href="/proyek-akhir-kantin-rpl/profile/index.php" class="text-muted text-decoration-none">Profil</a></li>
                     <?php else: ?>
-                        <li><a href="/kantin-kampus/auth/login.php" class="text-muted text-decoration-none">Login</a></li>
-                        <li><a href="/kantin-kampus/auth/register.php" class="text-muted text-decoration-none">Registrasi</a></li>
+                        <li><a href="/proyek-akhir-kantin-rpl/auth/login.php" class="text-muted text-decoration-none">Login</a></li>
+                        <li><a href="/proyek-akhir-kantin-rpl/auth/register.php" class="text-muted text-decoration-none">Registrasi</a></li>
                     <?php endif; ?>
                 </ul>
             </div>
@@ -51,7 +51,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Custom JS -->
-<script src="/kantin-kampus/assets/js/app.js"></script>
+<script src="/proyek-akhir-kantin-rpl/assets/js/app.js"></script>
 
 <!-- Auto hide alerts after 5 seconds -->
 <script>

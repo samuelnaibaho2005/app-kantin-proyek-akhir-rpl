@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Cek login dan role
 if (!isLoggedIn() || !hasRole('kantin')) {
-    redirect('/kantin-kampus/auth/login.php');
+    redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 require_once __DIR__ . '/../includes/header.php';
@@ -219,7 +219,7 @@ $conn->close();
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="bi bi-receipt"></i> Pesanan Terbaru</h5>
-        <a href="/kantin-kampus/order/manage.php" class="btn btn-sm btn-primary">
+        <a href="/proyek-akhir-kantin-rpl/order/manage.php" class="btn btn-sm btn-primary">
             Lihat Semua
         </a>
     </div>
@@ -270,7 +270,7 @@ $conn->close();
                                     <small><?php echo formatWaktu($order['created_at']); ?></small>
                                 </td>
                                 <td>
-                                    <a href="/kantin-kampus/order/manage.php?id=<?php echo $order['id']; ?>" 
+                                    <a href="/proyek-akhir-kantin-rpl/order/manage.php?id=<?php echo $order['id']; ?>" 
                                        class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-eye"></i>
                                     </a>
@@ -293,7 +293,7 @@ $conn->close();
 <!-- QUICK ACTIONS -->
 <div class="row mt-4">
     <div class="col-md-4">
-        <a href="/kantin-kampus/menu/manage.php" class="card text-decoration-none">
+        <a href="/proyek-akhir-kantin-rpl/menu/manage.php" class="card text-decoration-none">
             <div class="card-body text-center">
                 <i class="bi bi-card-list fs-1 text-primary"></i>
                 <h5 class="mt-2">Kelola Menu</h5>
@@ -303,7 +303,7 @@ $conn->close();
     </div>
     
     <div class="col-md-4">
-        <a href="/kantin-kampus/transaction/index.php" class="card text-decoration-none">
+        <a href="/proyek-akhir-kantin-rpl/transaction/index.php" class="card text-decoration-none">
             <div class="card-body text-center">
                 <i class="bi bi-cash-stack fs-1 text-success"></i>
                 <h5 class="mt-2">Pencatatan Keuangan</h5>
@@ -313,7 +313,7 @@ $conn->close();
     </div>
     
     <div class="col-md-4">
-        <a href="/kantin-kampus/order/manage.php" class="card text-decoration-none">
+        <a href="/proyek-akhir-kantin-rpl/order/manage.php" class="card text-decoration-none">
             <div class="card-body text-center">
                 <i class="bi bi-receipt fs-1 text-info"></i>
                 <h5 class="mt-2">Kelola Pesanan</h5>

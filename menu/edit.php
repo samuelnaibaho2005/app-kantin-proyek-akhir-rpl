@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Cek login dan role
 if (!isLoggedIn() || !hasRole('kantin')) {
-    redirect('/kantin-kampus/auth/login.php');
+    redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 $conn = getDBConnection();
@@ -12,7 +12,8 @@ $errors = [];
 
 // Get menu ID
 if (!isset($_GET['id'])) {
-    redirect('/kantin-kampus/menu/manage.php');
+    setFlashMessage('error', 'ID menu tidak valid');
+    redirect('/proyek-akhir-kantin-rpl/menu/manage.php');
 }
 
 $menu_id = intval($_GET['id']);
@@ -28,7 +29,7 @@ if (isset($_POST['toggle_status'])) {
         setFlashMessage('error', 'Gagal mengubah status menu');
     }
     
-    redirect('/kantin-kampus/menu/manage.php');
+    redirect('/proyek-akhir-kantin-rpl/menu/manage.php');
 }
 
 // Get menu data
@@ -37,7 +38,7 @@ $menu_result = $conn->query($menu_query);
 
 if ($menu_result->num_rows === 0) {
     setFlashMessage('error', 'Menu tidak ditemukan');
-    redirect('/kantin-kampus/menu/manage.php');
+    redirect('/proyek-akhir-kantin-rpl/menu/manage.php');
 }
 
 $menu = $menu_result->fetch_assoc();
@@ -106,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['toggle_status'])) {
         
         if ($conn->query($update_query)) {
             setFlashMessage('success', 'Menu berhasil diupdate!');
-            redirect('/kantin-kampus/menu/manage.php');
+            redirect('/proyek-akhir-kantin-rpl/menu/manage.php');
         } else {
             $errors[] = 'Gagal mengupdate menu: ' . $conn->error;
         }
@@ -130,8 +131,8 @@ require_once __DIR__ . '/../includes/header.php';
         <h2><i class="bi bi-pencil"></i> Edit Menu</h2>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/kantin-kampus/dashboard/kantin.php">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="/kantin-kampus/menu/manage.php">Kelola Menu</a></li>
+                <li class="breadcrumb-item"><a href="/proyek-akhir-kantin-rpl/dashboard/kantin.php">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="/proyek-akhir-kantin-rpl/menu/manage.php">Kelola Menu</a></li>
                 <li class="breadcrumb-item active">Edit Menu</li>
             </ol>
         </nav>
@@ -223,7 +224,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <div id="imagePreview" class="mt-3">
                         <?php if ($menu['image_url']): ?>
                             <img id="preview" 
-                                 src="/kantin-kampus/uploads/menus/<?php echo htmlspecialchars($menu['image_url']); ?>" 
+                                 src="/proyek-akhir-kantin-rpl/uploads/menus/<?php echo htmlspecialchars($menu['image_url']); ?>" 
                                  class="img-fluid rounded" style="max-height: 300px;">
                         <?php else: ?>
                             <img id="preview" src="" class="img-fluid rounded" 
@@ -236,7 +237,7 @@ require_once __DIR__ . '/../includes/header.php';
             <hr>
             
             <div class="d-flex justify-content-between">
-                <a href="/kantin-kampus/menu/manage.php" class="btn btn-secondary">
+                <a href="/proyek-akhir-kantin-rpl/menu/manage.php" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> Kembali
                 </a>
                 <button type="submit" class="btn btn-primary">

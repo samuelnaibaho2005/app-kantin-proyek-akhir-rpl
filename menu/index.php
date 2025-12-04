@@ -4,12 +4,12 @@ require_once __DIR__ . '/../config/database.php';
 
 // Cek login
 if (!isLoggedIn()) {
-    redirect('/kantin-kampus/auth/login.php');
+    redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 // Kantin tidak bisa akses halaman ini
 if (hasRole('kantin')) {
-    redirect('/kantin-kampus/dashboard/kantin.php');
+    redirect('/proyek-akhir-kantin-rpl/dashboard/kantin.php');
 }
 
 require_once __DIR__ . '/../includes/header.php';
@@ -77,12 +77,12 @@ $conn->close();
 <!-- KATEGORI FILTER -->
 <div class="row mb-4">
     <div class="col text-center">
-        <a href="/kantin-kampus/menu/index.php" 
+        <a href="/proyek-akhir-kantin-rpl/menu/index.php"
            class="category-badge <?php echo $category_filter === 0 ? 'active' : ''; ?>">
             <i class="bi bi-grid"></i> Semua Menu
         </a>
         <?php while ($cat = $categories_result->fetch_assoc()): ?>
-            <a href="/kantin-kampus/menu/index.php?category=<?php echo $cat['id']; ?>" 
+            <a href="/proyek-akhir-kantin-rpl/menu/index.php?category=<?php echo $cat['id']; ?>" 
                class="category-badge <?php echo $category_filter == $cat['id'] ? 'active' : ''; ?>">
                 <?php
                 $icons = [
@@ -104,7 +104,7 @@ $conn->close();
     <div class="alert alert-info">
         <i class="bi bi-info-circle"></i> 
         Menampilkan hasil pencarian untuk: <strong>"<?php echo htmlspecialchars($search); ?>"</strong>
-        <a href="/kantin-kampus/menu/index.php" class="alert-link ms-2">Clear</a>
+        <a href="/proyek-akhir-kantin-rpl/menu/index.php" class="alert-link ms-2">Clear</a>
     </div>
 <?php endif; ?>
 
@@ -115,7 +115,7 @@ $conn->close();
             <div class="col-md-4 col-lg-3 mb-4">
                 <div class="card menu-card h-100">
                     <?php if ($menu['image_url']): ?>
-                        <img src="/kantin-kampus/uploads/menus/<?php echo htmlspecialchars($menu['image_url']); ?>" 
+                        <img src="/proyek-akhir-kantin-rpl/uploads/menus/<?php echo htmlspecialchars($menu['image_url']); ?>" 
                              class="card-img-top" alt="<?php echo htmlspecialchars($menu['name']); ?>">
                     <?php else: ?>
                         <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" 
@@ -170,7 +170,7 @@ $conn->close();
                 <i class="bi bi-search"></i>
                 <h5>Menu Tidak Ditemukan</h5>
                 <p>Tidak ada menu yang sesuai dengan pencarian Anda</p>
-                <a href="/kantin-kampus/menu/index.php" class="btn btn-primary mt-3">
+                <a href="/proyek-akhir-kantin-rpl/menu/index.php" class="btn btn-primary mt-3">
                     <i class="bi bi-arrow-left"></i> Kembali ke Semua Menu
                 </a>
             </div>
@@ -191,7 +191,7 @@ $conn->close();
             this.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
             
             // AJAX call
-            fetch('/kantin-kampus/api/add-to-cart.php', {
+            fetch('/proyek-akhir-kantin-rpl/api/add-to-cart.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

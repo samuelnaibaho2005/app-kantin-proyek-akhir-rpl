@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Cek login
 if (!isLoggedIn() || hasRole('kantin')) {
-    redirect('/kantin-kampus/auth/login.php');
+    redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 require_once __DIR__ . '/../includes/header.php';
@@ -37,7 +37,7 @@ foreach ($cart as $item) {
                 <i class="bi bi-cart-x"></i>
                 <h5>Keranjang Kosong</h5>
                 <p>Belum ada menu yang ditambahkan ke keranjang</p>
-                <a href="/kantin-kampus/menu/index.php" class="btn btn-primary mt-3">
+                <a href="/proyek-akhir-kantin-rpl/menu/index.php" class="btn btn-primary mt-3">
                     <i class="bi bi-grid"></i> Lihat Menu
                 </a>
             </div>
@@ -56,7 +56,7 @@ foreach ($cart as $item) {
                         <div class="row align-items-center mb-3 pb-3 border-bottom">
                             <div class="col-md-2">
                                 <?php if ($item['image_url']): ?>
-                                    <img src="/kantin-kampus/uploads/menus/<?php echo htmlspecialchars($item['image_url']); ?>" 
+                                    <img src="/proyek-akhir-kantin-rpl/uploads/menus/<?php echo htmlspecialchars($item['image_url']); ?>" 
                                          class="img-fluid rounded" alt="<?php echo htmlspecialchars($item['name']); ?>">
                                 <?php else: ?>
                                     <div class="bg-secondary d-flex align-items-center justify-content-center rounded" 
@@ -109,7 +109,7 @@ foreach ($cart as $item) {
                 </div>
             </div>
             
-            <a href="/kantin-kampus/menu/index.php" class="btn btn-outline-secondary">
+            <a href="/proyek-akhir-kantin-rpl/menu/index.php" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Lanjut Belanja
             </a>
         </div>
@@ -133,7 +133,7 @@ foreach ($cart as $item) {
                         <h5 class="mb-0 text-success" id="total"><?php echo formatRupiah($total); ?></h5>
                     </div>
                     
-                    <a href="/kantin-kampus/order/checkout.php" class="btn btn-success w-100 btn-lg">
+                    <a href="/proyek-akhir-kantin-rpl/order/checkout.php" class="btn btn-success w-100 btn-lg">
                         <i class="bi bi-credit-card"></i> Checkout
                     </a>
                     
@@ -162,7 +162,7 @@ foreach ($cart as $item) {
             }
             
             // AJAX call
-            fetch('/kantin-kampus/api/update-cart.php', {
+            fetch('/proyek-akhir-kantin-rpl/api/update-cart.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

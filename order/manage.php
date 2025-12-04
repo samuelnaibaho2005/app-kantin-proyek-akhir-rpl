@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Cek login dan role
 if (!isLoggedIn() || !hasRole('kantin')) {
-    redirect('/kantin-kampus/auth/login.php');
+    redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 $conn = getDBConnection();
@@ -62,7 +62,7 @@ if (isset($_POST['update_status'])) {
             setFlashMessage('error', 'Gagal update status: ' . $e->getMessage());
         }
         
-        redirect('/kantin-kampus/order/manage.php');
+        redirect('/proyek-akhir-kantin-rpl/order/manage.php');
     }
 }
 
@@ -385,7 +385,7 @@ require_once __DIR__ . '/../includes/header.php';
             const modalContent = document.getElementById('modalContent');
             
             // Load detail via AJAX
-            fetch('/kantin-kampus/api/get-order-detail.php?id=' + orderId)
+            fetch('/proyek-akhir-kantin-rpl/api/get-order-detail.php?id=' + orderId)
                 .then(response => response.text())
                 .then(html => {
                     modalContent.innerHTML = html;

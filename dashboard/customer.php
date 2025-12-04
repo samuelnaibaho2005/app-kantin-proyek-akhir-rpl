@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Cek login dan role
 if (!isLoggedIn() || hasRole('kantin')) {
-    redirect('/kantin-kampus/auth/login.php');
+    redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 require_once __DIR__ . '/../includes/header.php';
@@ -62,7 +62,7 @@ $conn->close();
 ?>
 
 <!-- GREETING -->
-<div class="row mb-4">
+<div class="row mb-4 p-4">
     <div class="col">
         <h2>👋 Halo, <?php echo htmlspecialchars($_SESSION['name']); ?>!</h2>
         <p class="text-muted">Selamat datang di Kantin Kampus. Mau pesan apa hari ini?</p>
@@ -85,11 +85,11 @@ $conn->close();
     <div class="col text-center">
         <h5 class="mb-3">📂 Kategori Menu</h5>
         <div>
-            <a href="/kantin-kampus/menu/index.php" class="category-badge">
+            <a href="/proyek-akhir-kantin-rpl/menu/index.php" class="category-badge">
                 <i class="bi bi-grid"></i> Semua Menu
             </a>
             <?php while ($cat = $categories_result->fetch_assoc()): ?>
-                <a href="/kantin-kampus/menu/index.php?category=<?php echo $cat['id']; ?>" 
+                <a href="/proyek-akhir-kantin-rpl/menu/index.php?category=<?php echo $cat['id']; ?>" 
                    class="category-badge">
                     <?php
                     $icons = [
@@ -120,7 +120,7 @@ $conn->close();
             <div class="col-md-4 col-lg-2 mb-3">
                 <div class="card menu-card h-100">
                     <?php if ($menu['image_url']): ?>
-                        <img src="/kantin-kampus/uploads/menus/<?php echo htmlspecialchars($menu['image_url']); ?>" 
+                        <img src="/proyek-akhir-kantin-rpl/uploads/menus/<?php echo htmlspecialchars($menu['image_url']); ?>" 
                              class="card-img-top" alt="<?php echo htmlspecialchars($menu['name']); ?>">
                     <?php else: ?>
                         <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" 
@@ -169,7 +169,7 @@ $conn->close();
 
 <div class="row mb-4">
     <div class="col text-center">
-        <a href="/kantin-kampus/menu/index.php" class="btn btn-outline-primary">
+        <a href="/proyek-akhir-kantin-rpl/menu/index.php" class="btn btn-outline-primary">
             Lihat Semua Menu <i class="bi bi-arrow-right"></i>
         </a>
     </div>
@@ -215,20 +215,20 @@ $conn->close();
                         <?php echo formatTanggal($last_order['created_at']); ?> 
                         <?php echo formatWaktu($last_order['created_at']); ?>
                     </p>
-                    <a href="/kantin-kampus/order/status.php?id=<?php echo $last_order['id']; ?>" 
+                    <a href="/proyek-akhir-kantin-rpl/order/status.php?id=<?php echo $last_order['id']; ?>" 
                        class="btn btn-sm btn-primary">
                         Lihat Detail
                     </a>
                 <?php else: ?>
                     <p class="text-muted mb-0">Belum ada pesanan</p>
-                    <a href="/kantin-kampus/menu/index.php" class="btn btn-sm btn-primary mt-2">
+                    <a href="/proyek-akhir-kantin-rpl/menu/index.php" class="btn btn-sm btn-primary mt-2">
                         Pesan Sekarang
                     </a>
                 <?php endif; ?>
                 
                 <hr>
                 
-                <a href="/kantin-kampus/order/status.php" class="btn btn-sm btn-outline-primary w-100">
+                <a href="/proyek-akhir-kantin-rpl/order/status.php" class="btn btn-sm btn-outline-primary w-100">
                     Lihat Riwayat Lengkap
                 </a>
             </div>
@@ -283,7 +283,7 @@ $conn->close();
     document.getElementById('searchMenu').addEventListener('keyup', function(e) {
         if (e.key === 'Enter') {
             const keyword = this.value;
-            window.location.href = '/kantin-kampus/menu/index.php?search=' + encodeURIComponent(keyword);
+            window.location.href = '/proyek-akhir-kantin-rpl/menu/index.php?search=' + encodeURIComponent(keyword);
         }
     });
     
@@ -295,7 +295,7 @@ $conn->close();
             const menuPrice = this.dataset.price;
             
             // AJAX call to add to cart
-            fetch('/kantin-kampus/api/add-to-cart.php', {
+            fetch('/proyek-akhir-kantin-rpl/api/add-to-cart.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

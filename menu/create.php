@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Cek login dan role
 if (!isLoggedIn() || !hasRole('kantin')) {
-    redirect('/kantin-kampus/auth/login.php');
+    redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 $conn = getDBConnection();
@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($conn->query($insert_query)) {
             setFlashMessage('success', 'Menu berhasil ditambahkan!');
-            redirect('/kantin-kampus/menu/manage.php');
+            redirect('/proyek-akhir-kantin-rpl/menu/manage.php');
         } else {
             $errors[] = 'Gagal menyimpan menu: ' . $conn->error;
         }
@@ -81,8 +81,8 @@ require_once __DIR__ . '/../includes/header.php';
         <h2><i class="bi bi-plus-circle"></i> Tambah Menu Baru</h2>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/kantin-kampus/dashboard/kantin.php">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="/kantin-kampus/menu/manage.php">Kelola Menu</a></li>
+                <li class="breadcrumb-item"><a href="/proyek-akhir-kantin-rpl/dashboard/kantin.php">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="/proyek-akhir-kantin-rpl/menu/manage.php">Kelola Menu</a></li>
                 <li class="breadcrumb-item active">Tambah Menu</li>
             </ol>
         </nav>
@@ -183,7 +183,7 @@ require_once __DIR__ . '/../includes/header.php';
             <hr>
             
             <div class="d-flex justify-content-between">
-                <a href="/kantin-kampus/menu/manage.php" class="btn btn-secondary">
+                <a href="/proyek-akhir-kantin-rpl/menu/manage.php" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> Kembali
                 </a>
                 <button type="submit" class="btn btn-primary">

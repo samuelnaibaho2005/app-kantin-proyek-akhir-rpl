@@ -5,5 +5,5 @@ require_once __DIR__ . '/../config/database.php';
 session_destroy();
 
 // Redirect ke halaman login
-redirect('/kantin-kampus/auth/login.php');
+redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 ?>
