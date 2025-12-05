@@ -62,8 +62,9 @@ $conn->close();
 ?>
 
 <!-- GREETING -->
-<div class="row mb-4 p-4">
-    <div class="col">
+<div class="container">
+<div class="row mb-4"  style="margin-left:25px">
+    <div class="col" style="padding: -10px;">
         <h2>👋 Halo, <?php echo htmlspecialchars($_SESSION['name']); ?>!</h2>
         <p class="text-muted">Selamat datang di Kantin Kampus. Mau pesan apa hari ini?</p>
     </div>
@@ -108,9 +109,9 @@ $conn->close();
 </div>
 
 <!-- MENU REKOMENDASI -->
-<div class="row mb-4">
+<div class="row" style="margin-left: 25px">
     <div class="col">
-        <h5 class="mb-3">⭐ Menu Rekomendasi</h5>
+        <h5 class="">⭐ Menu Rekomendasi</h5>
     </div>
 </div>
 
@@ -276,7 +277,7 @@ $conn->close();
         </div>
     </div>
 </div>
-
+</div>
 <!-- Search & Add to Cart Scripts -->
 <script>
     // Search Menu

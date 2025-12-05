@@ -130,17 +130,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <i class="bi bi-person-plus"></i> Daftar Sekarang
                     </a>
                 </div>
-                
-                <!-- Demo Credentials -->
-                <div class="mt-4 p-3 bg-light rounded">
-                    <p class="small mb-2"><strong>Akun Demo:</strong></p>
-                    <p class="small mb-1">
-                        <strong>Kantin:</strong> kantin@kampus.ac.id / kantin123
-                    </p>
-                    <p class="small mb-0">
-                        <strong>Mahasiswa:</strong> samuel@student.ac.id / mahasiswa123
-                    </p>
-                </div>
             </div>
         </div>
     </div>

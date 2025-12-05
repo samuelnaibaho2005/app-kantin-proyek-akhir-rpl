@@ -51,7 +51,7 @@ $categories_result = $conn->query($categories_query);
 
 $conn->close();
 ?>
-
+<div class="container">
 <div class="row mb-4">
     <div class="col">
         <h2><i class="bi bi-grid"></i> Menu Kantin</h2>
@@ -176,6 +176,7 @@ $conn->close();
             </div>
         </div>
     <?php endif; ?>
+</div>
 </div>
 
 <!-- Add to Cart Script -->
