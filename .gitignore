@@ -1,7 +1,3 @@
-# Uploads dan file dinamis
-uploads/*
-!uploads/menus/**
-
 # Environment / secrets
 .env
 .env.* 
