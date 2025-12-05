@@ -1,5 +1,6 @@
 # Uploads dan file dinamis
-uploads/
+uploads/*
+!uploads/menus/**
 
 # Environment / secrets
 .env
