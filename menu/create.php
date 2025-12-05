@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $conn->close();
 require_once __DIR__ . '/../includes/header.php';
 ?>
-
+<div class="container">
 <div class="row mb-4">
     <div class="col">
         <h2><i class="bi bi-plus-circle"></i> Tambah Menu Baru</h2>
@@ -193,7 +193,7 @@ require_once __DIR__ . '/../includes/header.php';
         </form>
     </div>
 </div>
-
+</div>
 <script>
     function previewImage(event) {
         const preview = document.getElementById('preview');

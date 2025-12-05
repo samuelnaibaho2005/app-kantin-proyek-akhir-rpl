@@ -53,7 +53,7 @@ $categories_result = $conn->query($categories_query);
 
 $conn->close();
 ?>
-
+<div class="container">
 <div class="row mb-4">
     <div class="col">
         <h2><i class="bi bi-card-list"></i> Kelola Menu</h2>
@@ -212,7 +212,7 @@ $conn->close();
         <?php endif; ?>
     </div>
 </div>
-
+</div>
 <!-- Toggle Status Script -->
 <script>
     document.querySelectorAll('.toggle-status').forEach(button => {

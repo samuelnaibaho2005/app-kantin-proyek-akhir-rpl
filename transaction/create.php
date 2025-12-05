@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $conn->close();
 require_once __DIR__ . '/../includes/header.php';
 ?>
-
+<div class="container">
 <div class="row mb-4">
     <div class="col">
         <h2><i class="bi bi-plus-circle"></i> Tambah Transaksi</h2>
@@ -163,7 +163,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
     </div>
 </div>
-
+</div>
 <script>
     // Category options based on type
     const categoryOptions = {

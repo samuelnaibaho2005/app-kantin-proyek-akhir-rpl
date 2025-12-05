@@ -106,14 +106,7 @@ if (isset($_POST['change_password'])) {
 $conn->close();
 require_once __DIR__ . '/../includes/header.php';
 ?>
-
-<div class="row mb-4">
-    <div class="col">
-        <h2><i class="bi bi-person-circle"></i> Profil Saya</h2>
-        <p class="text-muted">Kelola informasi profil dan keamanan akun Anda</p>
-    </div>
-</div>
-
+<div class="container">
 <?php if (!empty($errors)): ?>
     <div class="alert alert-danger alert-dismissible fade show">
         <strong>Error:</strong>
@@ -255,5 +248,5 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
     </div>
 </div>
-
+</div>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

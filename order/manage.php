@@ -106,7 +106,7 @@ $orders_result = $conn->query($orders_query);
 
 require_once __DIR__ . '/../includes/header.php';
 ?>
-
+<div class="container">
 <div class="row mb-4">
     <div class="col">
         <h2><i class="bi bi-receipt"></i> Kelola Pesanan</h2>
@@ -339,7 +339,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
     </div>
 </div>
-
+</div>
 <script>
     // Update status
     document.querySelectorAll('.update-status').forEach(button => {

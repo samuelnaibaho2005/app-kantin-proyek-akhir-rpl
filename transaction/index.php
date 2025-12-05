@@ -94,7 +94,7 @@ $expense_breakdown_result = $conn->query($expense_breakdown_query);
 
 $conn->close();
 ?>
-
+<div class="container">
 <div class="row mb-4">
     <div class="col">
         <h2><i class="bi bi-cash-stack"></i> Pencatatan Keuangan</h2>
@@ -397,7 +397,7 @@ $conn->close();
         </div>
     </div>
 </div>
-
+</div>
 <script>
     // Show/hide custom date range
     document.getElementById('periodSelect').addEventListener('change', function() {

@@ -102,7 +102,7 @@ $pending_count = $pending_result->fetch_assoc()['pending_count'];
 
 $conn->close();
 ?>
-
+<div class="container">
 <div class="row mb-4">
     <div class="col">
         <h2><i class="bi bi-speedometer2"></i> Dashboard Kantin</h2>
@@ -322,7 +322,7 @@ $conn->close();
         </a>
     </div>
 </div>
-
+</div>
 <!-- Chart.js Script -->
 <script>
     const ctx = document.getElementById('salesChart').getContext('2d');
