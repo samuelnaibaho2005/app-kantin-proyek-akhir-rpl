@@ -46,6 +46,7 @@ if (isset($_GET['id'])) {
     $items_result = $conn->query($items_query);
     
     ?>
+    <div class="container">
     <div class="row mb-4">
         <div class="col">
             <h2><i class="bi bi-receipt"></i> Detail Pesanan</h2>
@@ -231,7 +232,7 @@ if (isset($_GET['id'])) {
         </div>
         </div>
     </div>
-    
+    </div>
     <?php
     
 } else {

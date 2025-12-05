@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $conn->close();
 require_once __DIR__ . '/../includes/header.php';
 ?>
-
+<div class="container">
 <div class="row mb-4">
     <div class="col">
         <h2><i class="bi bi-credit-card"></i> Checkout</h2>
@@ -303,7 +303,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
     </div>
 </form>
-
+</div>
 <script>
     // Show/hide transfer info
     document.querySelectorAll('input[name="payment_method"]').forEach(radio => {

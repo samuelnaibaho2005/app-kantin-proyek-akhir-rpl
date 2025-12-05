@@ -57,7 +57,6 @@ body {
     padding: 1.5rem;
     margin-bottom: 1rem;
 }
-
 .stats-card.income {
     border-left-color: var(--success-color);
 }

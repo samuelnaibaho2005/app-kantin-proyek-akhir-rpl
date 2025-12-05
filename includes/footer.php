@@ -6,7 +6,7 @@
         <div class="row">
             <div class="col-md-6">
                 <h5><i class="bi bi-shop"></i> Kantin Kampus</h5>
-                <p class="text-muted font-footer">Sistem informasi kantin kampus untuk memudahkan pemesanan dan pengelolaan keuangan UMKM.</p>
+                <p class="text-muted" style="color:white !important">Sistem informasi kantin kampus untuk memudahkan pemesanan dan pengelolaan keuangan UMKM.</p>
             </div>
             <div class="col-md-3">
                 <h6>Quick Links</h6>
