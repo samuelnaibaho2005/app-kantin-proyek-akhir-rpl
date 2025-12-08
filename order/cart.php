@@ -22,7 +22,7 @@ foreach ($cart as $item) {
     $total += $item['price'] * $item['quantity'];
 }
 ?>
-<div class="container">
+
 <div class="row mb-4">
     <div class="col">
         <h2><i class="bi bi-cart3"></i> Keranjang Belanja</h2>

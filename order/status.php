@@ -46,7 +46,7 @@ if (isset($_GET['id'])) {
     $items_result = $conn->query($items_query);
     
     ?>
-    <div class="container">
+    
     <div class="row mb-4">
         <div class="col">
             <h2><i class="bi bi-receipt"></i> Detail Pesanan</h2>
@@ -156,7 +156,7 @@ if (isset($_GET['id'])) {
                 </div>
             </div>
         </div>
-    </div>    
+        
         <!-- ORDER INFO -->
         <div class="col-lg-4">
             <div class="card mb-3">
@@ -230,9 +230,8 @@ if (isset($_GET['id'])) {
                 <i class="bi bi-arrow-left"></i> Kembali ke Riwayat
             </a>
         </div>
-        </div>
     </div>
-    </div>
+    
     <?php
     
 } else {
@@ -246,7 +245,7 @@ if (isset($_GET['id'])) {
     $orders_result = $conn->query($orders_query);
     
     ?>
-<div class="container">
+    
     <div class="row mb-4">
         <div class="col">
             <h2><i class="bi bi-clock-history"></i> Riwayat Pesanan</h2>
@@ -328,7 +327,6 @@ if (isset($_GET['id'])) {
                 </div>
             </div>
         </div>
-</div>
     <?php endif; ?>
     
     <?php
