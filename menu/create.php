@@ -41,7 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Upload image
-    $image_filename = null;
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $upload_result = uploadFile($_FILES['image'], __DIR__ . '/../uploads/menus/');
         
@@ -50,6 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $errors[] = $upload_result['message'];
         }
+    }else{
+        $image_filename = null;
     }
     
     // Insert ke database
