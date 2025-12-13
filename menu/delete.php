@@ -15,25 +15,26 @@ if (!isset($_GET['id'])) {
 $menu_id = intval($_GET['id']);
 
 $conn = getDBConnection();
+$canteenInfoId = $_SESSION['canteen_info_id'] ?? 0;
 
-// Cek apakah menu ada
-$check_query = "SELECT id FROM menus WHERE id = $menu_id AND deleted_at IS NULL LIMIT 1";
-$check_result = $conn->query($check_query);
+$stmt = $conn->prepare("SELECT id FROM menus WHERE id = ? AND canteen_info_id = ? AND deleted_at IS NULL LIMIT 1");
+$stmt->bind_param("ii", $menu_id, $canteenInfoId);
+$stmt->execute();
+$check_result = $stmt->get_result();
 
 if ($check_result->num_rows === 0) {
-    setFlashMessage('error', 'Menu tidak ditemukan');
+    setFlashMessage('error', 'Menu tidak ditemukan atau bukan milik Anda');
     redirect('/proyek-akhir-kantin-rpl/menu/manage.php');
 }
 
-// Soft delete
-$delete_query = "UPDATE menus SET deleted_at = NOW() WHERE id = $menu_id";
+$stmt2 = $conn->prepare("UPDATE menus SET deleted_at = NOW() WHERE id = ? AND canteen_info_id = ?");
+$stmt2->bind_param("ii", $menu_id, $canteenInfoId);
 
-if ($conn->query($delete_query)) {
+if ($stmt2->execute() && $stmt2->affected_rows > 0) {
     setFlashMessage('success', 'Menu berhasil dihapus');
 } else {
-    setFlashMessage('error', 'Gagal menghapus menu: ' . $conn->error);
+    setFlashMessage('error', 'Gagal menghapus menu');
 }
-
 $conn->close();
 redirect('/proyek-akhir-kantin-rpl/menu/manage.php');
 ?>

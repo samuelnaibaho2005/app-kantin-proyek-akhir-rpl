@@ -10,40 +10,51 @@ if (!isLoggedIn() || !hasRole('kantin')) {
 require_once __DIR__ . '/../includes/header.php';
 
 $conn = getDBConnection();
+$canteenInfoId = $_SESSION['canteen_info_id'] ?? 0;
+if (!$canteenInfoId) {
+    setFlashMessage('error', 'Kantin belum memiliki profil canteen_info.');
+    redirect('/proyek-akhir-kantin-rpl/dashboard/kantin.php');
+}
 
-// Filter
 $category_filter = isset($_GET['category']) ? intval($_GET['category']) : 0;
-$status_filter = isset($_GET['status']) ? $_GET['status'] : 'all';
-$search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
+$status_filter   = isset($_GET['status']) ? $_GET['status'] : 'all';
+$search          = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Build query
-$where = ["m.deleted_at IS NULL"];
+$where = ["m.deleted_at IS NULL", "m.canteen_info_id = ?"];
+$params = [$canteenInfoId];
+$types  = "i";
 
 if ($category_filter > 0) {
-    $where[] = "m.category_id = $category_filter";
+    $where[] = "m.category_id = ?";
+    $params[] = $category_filter;
+    $types .= "i";
 }
 
 if ($status_filter === 'available') {
-    $where[] = "m.is_available = TRUE AND m.stock > 0";
+    $where[] = "m.is_available = 1 AND m.stock > 0";
 } elseif ($status_filter === 'unavailable') {
-    $where[] = "m.is_available = FALSE OR m.stock = 0";
+    $where[] = "(m.is_available = 0 OR m.stock = 0)";
 }
 
-if (!empty($search)) {
-    $search_escaped = escapeString($conn, $search);
-    $where[] = "m.name LIKE '%$search_escaped%'";
+if ($search !== '') {
+    $where[] = "m.name LIKE ?";
+    $params[] = "%{$search}%";
+    $types .= "s";
 }
 
-$where_clause = implode(' AND ', $where);
+$where_clause = implode(" AND ", $where);
 
-// Get menus
-$query = "SELECT 
-    m.*,
-    c.name as category_name
-FROM menus m
-LEFT JOIN categories c ON m.category_id = c.id
-WHERE $where_clause
-ORDER BY m.created_at DESC";
+$sql = "SELECT m.*, c.name AS category_name
+        FROM menus m
+        LEFT JOIN categories c ON m.category_id = c.id
+        WHERE $where_clause
+        ORDER BY m.created_at DESC";
+
+$stmt = $conn->prepare($sql);
+$stmt->bind_param($types, ...$params);
+$stmt->execute();
+$result = $stmt->get_result();
+
 
 $result = $conn->query($query);
 

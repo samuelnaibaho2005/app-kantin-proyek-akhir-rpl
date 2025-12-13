@@ -52,25 +52,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }else{
         $image_filename = null;
     }
-    
+
+    $canteenInfoId = $_SESSION['canteen_info_id'] ?? 0;
+    if (!$canteenInfoId) {
+        $errors[] = 'Kantin belum memiliki canteen_info_id. Silakan lengkapi profil kantin.';
+    }
+
     // Insert ke database
     if (empty($errors)) {
-        $name_escaped = escapeString($conn, $name);
-        $description_escaped = escapeString($conn, $description);
-        $image_value = $image_filename ? "'" . escapeString($conn, $image_filename) . "'" : 'NULL';
-        
-        $insert_query = "INSERT INTO menus 
-            (category_id, name, description, price, stock, is_available, image_url) 
-            VALUES 
-            ($category_id, '$name_escaped', '$description_escaped', $price, $stock, $is_available, $image_value)";
-        
-        if ($conn->query($insert_query)) {
+        $sql = "INSERT INTO menus
+                (category_id, canteen_info_id, name, description, price, stock, is_available, image_url, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+
+        $stmt = $conn->prepare($sql);
+
+        $img = $image_filename; // bisa null
+        $stmt->bind_param(
+            "iissdiis",
+            $category_id,
+            $canteenInfoId,
+            $name,
+            $description,
+            $price,
+            $stock,
+            $is_available,
+            $img
+        );
+
+        if ($stmt->execute()) {
             setFlashMessage('success', 'Menu berhasil ditambahkan!');
             redirect('/proyek-akhir-kantin-rpl/menu/manage.php');
         } else {
-            $errors[] = 'Gagal menyimpan menu: ' . $conn->error;
+            $errors[] = 'Gagal menyimpan menu: ' . $stmt->error;
         }
     }
+
 }
 
 $conn->close();
