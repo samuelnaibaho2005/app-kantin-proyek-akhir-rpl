@@ -9,7 +9,7 @@
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');
-define('DB_NAME', 'kantin_kampus');
+define('DB_NAME', 'kantin_kampus_rpl');
 
 // Timezone
 date_default_timezone_set('Asia/Jakarta');
@@ -119,6 +119,34 @@ function isLoggedIn() {
 function hasRole($role) {
     return isset($_SESSION['role']) && $_SESSION['role'] === $role;
 }
+
+// ---------------------------------
+function requireLogin() {
+    if (!isLoggedIn()) {
+        redirect('/proyek-akhir-kantin-rpl/auth/login.php');
+    }
+}
+
+function requireRole($role) {
+    requireLogin();
+    if (!hasRole($role)) {
+        setFlashMessage('danger', 'Akses ditolak.');
+        redirect('/proyek-akhir-kantin-rpl/index.php');
+    }
+}
+
+function currentOwnerId() {
+    return $_SESSION['owner_id'] ?? null;
+}
+
+function currentCustomerId() {
+    return $_SESSION['customer_id'] ?? null;
+}
+
+function currentCanteenInfoId() {
+    return $_SESSION['canteen_info_id'] ?? null; // INI KUNCI untuk scoped query
+}
+// ------------------------
 
 /**
  * Fungsi untuk redirect
