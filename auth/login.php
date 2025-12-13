@@ -12,44 +12,104 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = sanitizeInput($_POST['email']);
     $password = $_POST['password'];
-    
-    // Validasi input
+
     if (empty($email) || empty($password)) {
         $error = 'Email dan password harus diisi';
     } elseif (!isValidEmail($email)) {
         $error = 'Format email tidak valid';
     } else {
-        // Cek user di database
         $conn = getDBConnection();
-        $email_escaped = escapeString($conn, $email);
-        
-        $query = "SELECT * FROM users WHERE email = '$email_escaped' AND is_active = TRUE AND deleted_at IS NULL LIMIT 1";
-        $result = $conn->query($query);
-        
-        if ($result && $result->num_rows > 0) {
-            $user = $result->fetch_assoc();
-            
-            // Verify password
-            if (verifyPassword($password, $user['password'])) {
-                // Set session
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['name'] = $user['name'];
-                $_SESSION['email'] = $user['email'];
-                $_SESSION['role'] = $user['role'];
-                $_SESSION['photo_url'] = $user['photo_url'];
-                
-                // Redirect berdasarkan role
-                setFlashMessage('success', 'Login berhasil! Selamat datang, ' . $user['name']);
-                $redirect = ($user['role'] === 'kantin') ? '/proyek-akhir-kantin-rpl/dashboard/kantin.php' : '/proyek-akhir-kantin-rpl/dashboard/customer.php';
-                redirect($redirect);
+
+        // 1) Coba login sebagai OWNER (kantin)
+        $stmt = $conn->prepare("
+            SELECT o.id, o.name, o.email, o.password, o.photo_url, o.is_active,
+                   ci.id AS canteen_info_id
+            FROM owners o
+            LEFT JOIN canteen_info ci ON ci.canteen_id = o.id
+            WHERE o.email = ? AND o.is_active = 1
+            LIMIT 1
+        ");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $ownerRes = $stmt->get_result();
+
+        if ($ownerRes && $ownerRes->num_rows > 0) {
+            $owner = $ownerRes->fetch_assoc();
+
+            if (verifyPassword($password, $owner['password'])) {
+                // Pastikan owner punya canteen_info (kalau belum, bikin)
+                if (empty($owner['canteen_info_id'])) {
+                    $canteenName = "Kantin " . $owner['name'];
+
+                    $ins = $conn->prepare("
+                        INSERT INTO canteen_info (canteen_name, canteen_id, created_at, updated_at)
+                        VALUES (?, ?, NOW(), NOW())
+                    ");
+                    $ins->bind_param("si", $canteenName, $owner['id']);
+                    $ins->execute();
+                    $owner['canteen_info_id'] = $conn->insert_id;
+                }
+
+                // Set session (tenant scoping ada di canteen_info_id)
+                $_SESSION['user_id'] = $owner['id'];
+                $_SESSION['owner_id'] = $owner['id'];
+                $_SESSION['customer_id'] = null;
+                $_SESSION['canteen_info_id'] = (int)$owner['canteen_info_id'];
+
+                $_SESSION['name'] = $owner['name'];
+                $_SESSION['email'] = $owner['email'];
+                $_SESSION['role'] = 'kantin';
+                $_SESSION['photo_url'] = $owner['photo_url'];
+
+                setFlashMessage('success', 'Login berhasil! Selamat datang, ' . $owner['name']);
+                redirect('/proyek-akhir-kantin-rpl/dashboard/kantin.php');
             } else {
                 $error = 'Password salah';
             }
+
+            $stmt->close();
+            $conn->close();
+            // stop di sini
         } else {
-            $error = 'Email tidak terdaftar atau akun tidak aktif';
+            $stmt->close();
+
+            // 2) Kalau bukan owner, coba login sebagai CUSTOMER
+            $stmt2 = $conn->prepare("
+                SELECT id, name, email, password, photo
+                FROM customers
+                WHERE email = ?
+                LIMIT 1
+            ");
+            $stmt2->bind_param("s", $email);
+            $stmt2->execute();
+            $custRes = $stmt2->get_result();
+
+            if ($custRes && $custRes->num_rows > 0) {
+                $cust = $custRes->fetch_assoc();
+
+                if (verifyPassword($password, $cust['password'])) {
+                    $_SESSION['user_id'] = $cust['id'];
+                    $_SESSION['customer_id'] = $cust['id'];
+                    $_SESSION['owner_id'] = null;
+                    $_SESSION['canteen_info_id'] = null; // customer tidak punya tenant
+
+                    $_SESSION['name'] = $cust['name'];
+                    $_SESSION['email'] = $cust['email'];
+                    $_SESSION['role'] = 'customer';
+                    $_SESSION['photo_url'] = $cust['photo'] ?? null;
+
+                    setFlashMessage('success', 'Login berhasil! Selamat datang, ' . $cust['name']);
+                    redirect('/proyek-akhir-kantin-rpl/dashboard/customer.php');
+                } else {
+                    $error = 'Password salah';
+                }
+            } else {
+                $error = 'Email tidak terdaftar';
+            }
+
+            $stmt2->close();
+            $conn->close();
         }
-        
-        $conn->close();
     }
 }
 ?>
