@@ -211,12 +211,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <i class="bi bi-person-plus"></i> Daftar Sekarang
                     </a>
                 </div>
-
-                <div class="mt-4 p-3 bg-light rounded">
-                    <p class="small mb-2"><strong>Akun Demo:</strong></p>
-                    <p class="small mb-1"><strong>Owner:</strong> siti@owner.com / owner123</p>
-                    <p class="small mb-0"><strong>Customer:</strong> samuel@student.ac.id / customer123</p>
-                </div>
             </div>
         </div>
     </div>

@@ -52,6 +52,14 @@ ORDER BY ci.canteen_name, m.name ASC";
 
 $result = $conn->query($query);
 
+$menus_query = "SELECT 
+    m.*,
+    ci.canteen_name
+FROM menus m
+JOIN canteen_info ci ON m.canteen_info_id = ci.id
+WHERE m.deleted_at IS NULL
+ORDER BY m.created_at DESC";
+
 // Get categories
 $categories_query = "SELECT * FROM categories ORDER BY name ASC";
 $categories_result = $conn->query($categories_query);
@@ -132,7 +140,7 @@ $conn->close();
                     <?php endif; ?>
                     
                     <span class="badge bg-success">
-                        <?php echo htmlspecialchars($menu['category_name']); ?>
+                        <?php echo 'Stok '. htmlspecialchars($menu['stock']); ?>
                     </span>
                     
                     <div class="card-body d-flex flex-column">
@@ -147,13 +155,6 @@ $conn->close();
                         
                         <div class="mt-auto">
                             <p class="price mb-2"><?php echo formatRupiah($menu['price']); ?></p>
-                            <p class="stock-info mb-3">
-                                <i class="bi bi-box"></i> Stok: 
-                                <span class="badge bg-<?php echo $menu['stock'] > 10 ? 'success' : ($menu['stock'] > 0 ? 'warning' : 'danger'); ?>">
-                                    <?php echo $menu['stock']; ?>
-                                </span>
-                            </p>
-                            
                             <?php if ($menu['stock'] > 0): ?>
                                 <button class="btn btn-primary btn-sm w-100 add-to-cart" 
                                         data-id="<?php echo $menu['id']; ?>"

@@ -186,7 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input type="text" class="form-control" id="nim" name="nim" 
                                placeholder="Masukkan NIM atau ID Staf"
                                value="<?php echo isset($_POST['nim']) ? htmlspecialchars($_POST['nim']) : ''; ?>">
-                        <small class="text-muted">Wajib diisi untuk customer (mahasiswa/staf)</small>
+                        <small class="text-muted">Wajib diisi untuk mahasiswa/staf, jika tidak isi "-"</small>
                     </div>
                     
                     <div class="mb-3">
