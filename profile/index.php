@@ -2,144 +2,181 @@
 $page_title = 'Profil';
 require_once __DIR__ . '/../config/database.php';
 
-// Harus login
+// wajib login
 if (!isLoggedIn()) {
     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 $conn = getDBConnection();
+$userId = (int)($_SESSION['user_id'] ?? 0);
+$userType = getUserType(); // 'owner' atau 'customer'
 
-$user_id   = (int)($_SESSION['user_id'] ?? 0);
-$user_type = getUserType(); // 'owner' atau 'customer'
-
-if ($user_id <= 0 || !in_array($user_type, ['owner', 'customer'], true)) {
-    $conn->close();
-    die("Error: Session user tidak valid. Silakan login ulang.");
-}
-
-// Tentukan tabel berdasarkan user_type (WHITELIST!)
-$table = ($user_type === 'owner') ? 'owners' : 'customers';
-
-// Ambil data user dari tabel yang sesuai
-$stmt = $conn->prepare("SELECT id, name, email, photo_url, created_at, updated_at FROM {$table} WHERE id = ? LIMIT 1");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$user_result = $stmt->get_result();
-
-if (!$user_result || $user_result->num_rows === 0) {
-    $stmt->close();
-    $conn->close();
-    die("Error: Data akun tidak ditemukan. Hubungi administrator.");
-}
-
-$user = $user_result->fetch_assoc();
-$stmt->close();
-
-// Kalau owner, ambil canteen_info juga
-$canteen = null;
-if ($user_type === 'owner') {
-    $stmt2 = $conn->prepare("SELECT * FROM canteen_info WHERE owner_id = ? LIMIT 1");
-    $stmt2->bind_param("i", $user_id);
-    $stmt2->execute();
-    $canteen_res = $stmt2->get_result();
-    if ($canteen_res && $canteen_res->num_rows > 0) {
-        $canteen = $canteen_res->fetch_assoc();
-        // simpan ke session biar fungsi getOwnerCanteenId() makin stabil
-        $_SESSION['canteen_info_id'] = $canteen['id'];
+/**
+ * =========================
+ * OWNER PROFILE (edit canteen_info)
+ * =========================
+ */
+if ($userType === 'owner') {
+    $canteenId = getOwnerCanteenId();
+    if (!$canteenId) {
+        echo '<div class="alert alert-danger">Canteen info tidak ditemukan.</div>';
+        require_once __DIR__ . '/../includes/footer.php';
+        exit();
     }
-    $stmt2->close();
-}
 
-$conn->close();
+    // handle update
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $location      = trim($_POST['location'] ?? '');
+        $opening_hours = trim($_POST['opening_hours'] ?? '');
+        $phone         = trim($_POST['phone'] ?? '');
+        $description   = trim($_POST['description'] ?? '');
 
-require_once __DIR__ . '/../includes/header.php';
+        // (opsional) validasi simple
+        if (strlen($phone) > 30) $phone = substr($phone, 0, 30);
 
-$photo = !empty($user['photo_url'])
-    ? $user['photo_url']
-    : 'https://ui-avatars.com/api/?name=' . urlencode($user['name'] ?? 'User') . '&background=0D6EFD&color=fff';
+        $stmt = $conn->prepare("
+            UPDATE canteen_info
+            SET location = ?, opening_hours = ?, phone = ?, description = ?
+            WHERE id = ? AND owner_id = ?
+        ");
+        $stmt->bind_param("ssssii", $location, $opening_hours, $phone, $description, $canteenId, $userId);
 
-?>
+        if ($stmt->execute()) {
+            setFlashMessage('success', 'Profil kantin berhasil diperbarui.');
+            $stmt->close();
+            $conn->close();
+            redirect('/proyek-akhir-kantin-rpl/profile/index.php');
+        } else {
+            $err = $stmt->error;
+            $stmt->close();
+            echo '<div class="alert alert-danger">Gagal update: ' . htmlspecialchars($err) . '</div>';
+        }
+    }
 
-<div class="row">
-    <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-body text-center">
-                <img src="<?php echo htmlspecialchars($photo); ?>"
-                     alt="Foto Profil"
-                     class="rounded-circle mb-3"
-                     style="width: 110px; height: 110px; object-fit: cover;">
+    // load canteen info
+    $stmt = $conn->prepare("
+        SELECT canteen_name, location, opening_hours, phone, description, logo_url
+        FROM canteen_info
+        WHERE id = ? AND owner_id = ?
+        LIMIT 1
+    ");
+    $stmt->bind_param("ii", $canteenId, $userId);
+    $stmt->execute();
+    $canteen = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
 
-                <h5 class="mb-1"><?php echo htmlspecialchars($user['name'] ?? '-'); ?></h5>
-                <div class="text-muted small mb-2"><?php echo htmlspecialchars($user['email'] ?? '-'); ?></div>
+    if (!$canteen) {
+        echo '<div class="alert alert-danger">Data kantin tidak ditemukan.</div>';
+        $conn->close();
+        require_once __DIR__ . '/../includes/footer.php';
+        exit();
+    }
+    require_once __DIR__ . '/../includes/header.php';
 
-                <span class="badge bg-secondary">
-                    <?php echo ($user_type === 'owner') ? 'Owner' : 'Customer'; ?>
-                </span>
+    ?>
 
-                <hr>
-
-                <div class="text-start small text-muted">
-                    <div class="mb-2">
-                        <strong>Dibuat:</strong>
-                        <?php echo !empty($user['created_at']) ? htmlspecialchars($user['created_at']) : '-'; ?>
-                    </div>
-                    <div>
-                        <strong>Update:</strong>
-                        <?php echo !empty($user['updated_at']) ? htmlspecialchars($user['updated_at']) : '-'; ?>
-                    </div>
-                </div>
-
-            </div>
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-1"><i class="bi bi-person"></i> Profil Owner</h2>
+            <p class="text-muted mb-0">Kelola informasi kantin kamu.</p>
         </div>
     </div>
 
-    <div class="col-lg-8">
-        <div class="card mb-4">
-            <div class="card-header">
-                <strong>Informasi Akun</strong>
-            </div>
-            <div class="card-body">
-                <div class="row mb-2">
-                    <div class="col-sm-4 text-muted">Nama</div>
-                    <div class="col-sm-8"><?php echo htmlspecialchars($user['name'] ?? '-'); ?></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col-sm-4 text-muted">Email</div>
-                    <div class="col-sm-8"><?php echo htmlspecialchars($user['email'] ?? '-'); ?></div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-4 text-muted">Role</div>
-                    <div class="col-sm-8"><?php echo ($user_type === 'owner') ? 'Owner/Pemilik Kantin' : 'Customer'; ?></div>
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-shop fs-1"></i>
+                    </div>
+                    <h5 class="mb-1"><?php echo htmlspecialchars($canteen['canteen_name']); ?></h5>
+                    <div class="text-muted small"><?php echo htmlspecialchars($_SESSION['email'] ?? '-'); ?></div>
+                    <hr>
+                    <div class="text-start small">
+                        <div class="mb-2"><strong>Nama Owner:</strong> <?php echo htmlspecialchars($_SESSION['name'] ?? '-'); ?></div>
+                        <div><strong>Tipe:</strong> Owner</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <?php if ($user_type === 'owner'): ?>
+        <div class="col-lg-8">
             <div class="card">
                 <div class="card-header">
                     <strong>Informasi Kantin</strong>
                 </div>
                 <div class="card-body">
-                    <?php if ($canteen): ?>
-                        <div class="row mb-2">
-                            <div class="col-sm-4 text-muted">Nama Kantin</div>
-                            <div class="col-sm-8"><?php echo htmlspecialchars($canteen['canteen_name'] ?? '-'); ?></div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-sm-4 text-muted">ID Kantin</div>
-                            <div class="col-sm-8"><?php echo (int)$canteen['id']; ?></div>
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Lokasi</label>
+                            <input type="text" name="location" class="form-control"
+                                   value="<?php echo htmlspecialchars($canteen['location'] ?? ''); ?>"
+                                   placeholder="Contoh: Stand A1, Kantin Utama">
                         </div>
 
-                    <?php else: ?>
-                        <div class="alert alert-warning mb-0">
-                            Data kantin (canteen_info) belum ditemukan untuk akun owner ini.
-                            Silakan lengkapi data kantin atau hubungi admin.
+                        <div class="mb-3">
+                            <label class="form-label">Jam Buka</label>
+                            <input type="text" name="opening_hours" class="form-control"
+                                   value="<?php echo htmlspecialchars($canteen['opening_hours'] ?? ''); ?>"
+                                   placeholder="Contoh: 07:00 - 15:00">
                         </div>
-                    <?php endif; ?>
+
+                        <div class="mb-3">
+                            <label class="form-label">No. HP</label>
+                            <input type="text" name="phone" class="form-control"
+                                   value="<?php echo htmlspecialchars($canteen['phone'] ?? ''); ?>"
+                                   placeholder="Contoh: 0812xxxxxxx">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Deskripsi</label>
+                            <textarea name="description" class="form-control" rows="4"
+                                      placeholder="Ceritakan singkat tentang kantin kamu..."><?php
+                                echo htmlspecialchars($canteen['description'] ?? '');
+                            ?></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Simpan Perubahan
+                        </button>
+                    </form>
                 </div>
             </div>
-        <?php endif; ?>
+        </div>
+    </div>
 
+    <?php
+    $conn->close();
+    require_once __DIR__ . '/../includes/footer.php';
+    exit();
+}
+
+/**
+ * =========================
+ * CUSTOMER PROFILE (simple info)
+ * =========================
+ */
+$stmt = $conn->prepare("SELECT name, email, phone, nim, photo_url FROM customers WHERE id = ? LIMIT 1");
+$stmt->bind_param("i", $userId);
+$stmt->execute();
+$me = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+$conn->close();
+?>
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="mb-1"><i class="bi bi-person"></i> Profil Customer</h2>
+        <p class="text-muted mb-0">Informasi akun kamu.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div><strong>Nama:</strong> <?php echo htmlspecialchars($me['name'] ?? '-'); ?></div>
+        <div><strong>Email:</strong> <?php echo htmlspecialchars($me['email'] ?? '-'); ?></div>
+        <div><strong>HP:</strong> <?php echo htmlspecialchars($me['phone'] ?? '-'); ?></div>
+        <div><strong>NIM:</strong> <?php echo htmlspecialchars($me['nim'] ?? '-'); ?></div>
     </div>
 </div>
 
