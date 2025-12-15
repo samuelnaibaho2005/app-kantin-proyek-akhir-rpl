@@ -32,8 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $table = 'customers';
         }
         
-        $query = "SELECT * FROM $table WHERE email = '$email_escaped' AND is_active = TRUE LIMIT 1";
+        $stmt = $conn->prepare("SELECT * FROM customers WHERE email = ? LIMIT 1");
         $result = $conn->query($query);
+        
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
         
         if ($result && $result->num_rows > 0) {
             $user = $result->fetch_assoc();
@@ -41,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Verify password
             if (verifyPassword($password, $user['password'])) {
                 // Set session
-                $_SESSION['user_id'] = $user['id'];
+                $_SESSION[''] = $user['id'];
                 $_SESSION['name'] = $user['name'];
                 $_SESSION['email'] = $user['email'];
                 $_SESSION['user_type'] = $user_type;
@@ -55,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $canteen_query = "SELECT id FROM canteen_info WHERE owner_id = $ownerId LIMIT 1";
                     $canteen_result = $conn->query($canteen_query);
 
-                    // Kalau kolomnya ternyata bukan owner_id (misal user_id), fallback
+                    // Kalau kolomnya ternyata bukan owner_id (misal ), fallback
                 // Jika owner, get/auto-create canteen_info_id
                 if ($user_type === 'owner') {
                     $ownerId = (int)$user['id'];
@@ -64,11 +68,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $canteen_query = "SELECT id FROM canteen_info WHERE owner_id = $ownerId LIMIT 1";
                     $canteen_result = $conn->query($canteen_query);
 
-                    // Kalau kolomnya ternyata bukan owner_id (misal user_id), fallback
+                    // Kalau kolomnya ternyata bukan owner_id (misal ), fallback
                     if (!$canteen_result) {
-                        $canteen_query = "SELECT id FROM canteen_info WHERE user_id = $ownerId LIMIT 1";
+                        $canteen_query = "SELECT id FROM canteen_info WHERE  = $ownerId LIMIT 1";
                         $canteen_result = $conn->query($canteen_query);
-                        $fkColumn = 'user_id';
+                        $fkColumn = '';
                     } else {
                         $fkColumn = 'owner_id';
                     }

@@ -2,49 +2,61 @@
 $page_title = 'Status Pesanan';
 require_once __DIR__ . '/../config/database.php';
 
-// Cek login
-if (!isLoggedIn() || hasRole('kantin')) {
+// HARUS LOGIN & HARUS CUSTOMER (bukan owner)
+if (!isLoggedIn() || !isCustomer()) {
+    redirect('/proyek-akhir-kantin-rpl/auth/login.php');
+}
+
+$conn = getDBConnection();
+$customer_id = (int)($_SESSION['user_id'] ?? 0);
+
+if ($customer_id <= 0) {
+    setFlashMessage('error', 'Session tidak valid. Silakan login ulang.');
     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 require_once __DIR__ . '/../includes/header.php';
 
-$conn = getDBConnection();
-$user_id = $_SESSION['user_id'];
+// ============================
+// MODE: DETAIL ORDER
+// ============================
+if (isset($_GET['id']) && $_GET['id'] !== '') {
+    $order_id = (int)$_GET['id'];
 
-// Jika ada ID, tampilkan detail pesanan
-if (isset($_GET['id'])) {
-    $order_id = intval($_GET['id']);
-    
-    // Get order detail
-    $order_query = "SELECT 
-        o.*,
-        u.name as customer_name
-    FROM orders o
-    JOIN users u ON o.user_id = u.id
-    WHERE o.id = $order_id AND o.user_id = $user_id
-    LIMIT 1";
-    
-    $order_result = $conn->query($order_query);
-    
-    if ($order_result->num_rows === 0) {
-        setFlashMessage('error', 'Pesanan tidak ditemukan');
+    if ($order_id <= 0) {
+        setFlashMessage('error', 'ID pesanan tidak valid.');
         redirect('/proyek-akhir-kantin-rpl/order/status.php');
     }
-    
+
+    // Ambil 1 order (HARUS milik customer yang login)
+    $order_query = "SELECT 
+            o.*,
+            ci.canteen_name
+        FROM orders o
+        LEFT JOIN canteen_info ci ON o.canteen_info_id = ci.id
+        WHERE o.id = $order_id
+          AND o.customer_id = $customer_id
+        LIMIT 1";
+
+    $order_result = $conn->query($order_query);
+
+    if (!$order_result || $order_result->num_rows === 0) {
+        setFlashMessage('error', 'Pesanan tidak ditemukan.');
+        redirect('/proyek-akhir-kantin-rpl/order/status.php');
+    }
+
     $order = $order_result->fetch_assoc();
-    
-    // Get order items
+
+    // Ambil item pesanan
     $items_query = "SELECT 
-        oi.*,
-        m.name as menu_name,
-        m.image_url
-    FROM order_items oi
-    JOIN menus m ON oi.menu_id = m.id
-    WHERE oi.order_id = $order_id";
-    
+            oi.*,
+            m.name as menu_name,
+            m.image_url
+        FROM order_items oi
+        JOIN menus m ON oi.menu_id = m.id
+        WHERE oi.order_id = $order_id";
+
     $items_result = $conn->query($items_query);
-    
     ?>
     
     <div class="row mb-4">
@@ -59,7 +71,7 @@ if (isset($_GET['id'])) {
             </nav>
         </div>
     </div>
-    
+
     <div class="row">
         <!-- ORDER TRACKING -->
         <div class="col-lg-8">
@@ -77,7 +89,7 @@ if (isset($_GET['id'])) {
                                 <?php echo formatWaktu($order['created_at']); ?>
                             </p>
                         </div>
-                        
+
                         <div class="timeline-item <?php echo $order['status'] === 'processing' ? 'active' : ''; ?> <?php echo in_array($order['status'], ['processing', 'ready', 'completed']) ? 'completed' : ''; ?>">
                             <h6>Sedang Diproses</h6>
                             <p class="text-muted small mb-0">
@@ -88,7 +100,7 @@ if (isset($_GET['id'])) {
                                 <?php endif; ?>
                             </p>
                         </div>
-                        
+
                         <div class="timeline-item <?php echo $order['status'] === 'ready' ? 'active' : ''; ?> <?php echo in_array($order['status'], ['ready', 'completed']) ? 'completed' : ''; ?>">
                             <h6>Siap Diambil</h6>
                             <p class="text-muted small mb-0">
@@ -99,7 +111,7 @@ if (isset($_GET['id'])) {
                                 <?php endif; ?>
                             </p>
                         </div>
-                        
+
                         <div class="timeline-item <?php echo $order['status'] === 'completed' ? 'completed' : ''; ?>">
                             <h6>Selesai</h6>
                             <p class="text-muted small mb-0">
@@ -111,7 +123,7 @@ if (isset($_GET['id'])) {
                             </p>
                         </div>
                     </div>
-                    
+
                     <?php if ($order['status'] === 'cancelled'): ?>
                         <div class="alert alert-danger mt-4">
                             <i class="bi bi-x-circle"></i> 
@@ -120,43 +132,46 @@ if (isset($_GET['id'])) {
                     <?php endif; ?>
                 </div>
             </div>
-            
+
             <!-- ORDER ITEMS -->
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">Detail Pesanan</h5>
                 </div>
                 <div class="card-body">
-                    <?php while ($item = $items_result->fetch_assoc()): ?>
-                        <div class="row align-items-center mb-3 pb-3 border-bottom">
-                            <div class="col-md-2">
-                                <?php if ($item['image_url']): ?>
-                                    <img src="/proyek-akhir-kantin-rpl/uploads/menus/<?php echo htmlspecialchars($item['image_url']); ?>" 
-                                         class="img-fluid rounded" alt="<?php echo htmlspecialchars($item['menu_name']); ?>">
-                                <?php else: ?>
-                                    <div class="bg-secondary d-flex align-items-center justify-content-center rounded" 
-                                         style="height: 60px;">
-                                        <i class="bi bi-image text-white"></i>
-                                    </div>
-                                <?php endif; ?>
+                    <?php if ($items_result && $items_result->num_rows > 0): ?>
+                        <?php while ($item = $items_result->fetch_assoc()): ?>
+                            <div class="row align-items-center mb-3 pb-3 border-bottom">
+                                <div class="col-md-2">
+                                    <?php if (!empty($item['image_url'])): ?>
+                                        <img src="/proyek-akhir-kantin-rpl/uploads/menus/<?php echo htmlspecialchars($item['image_url']); ?>" 
+                                             class="img-fluid rounded" alt="<?php echo htmlspecialchars($item['menu_name']); ?>">
+                                    <?php else: ?>
+                                        <div class="bg-secondary d-flex align-items-center justify-content-center rounded" style="height:60px;">
+                                            <i class="bi bi-image text-white"></i>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <h6 class="mb-1"><?php echo htmlspecialchars($item['menu_name']); ?></h6>
+                                    <small class="text-muted">
+                                        <?php echo formatRupiah($item['price']); ?> x <?php echo (int)$item['quantity']; ?>
+                                    </small>
+                                </div>
+
+                                <div class="col-md-4 text-end">
+                                    <strong><?php echo formatRupiah($item['subtotal']); ?></strong>
+                                </div>
                             </div>
-                            
-                            <div class="col-md-6">
-                                <h6 class="mb-1"><?php echo htmlspecialchars($item['menu_name']); ?></h6>
-                                <small class="text-muted">
-                                    <?php echo formatRupiah($item['price']); ?> x <?php echo $item['quantity']; ?>
-                                </small>
-                            </div>
-                            
-                            <div class="col-md-4 text-end">
-                                <strong><?php echo formatRupiah($item['subtotal']); ?></strong>
-                            </div>
-                        </div>
-                    <?php endwhile; ?>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <p class="text-muted mb-0">Item pesanan tidak ditemukan.</p>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
-        
+
         <!-- ORDER INFO -->
         <div class="col-lg-4">
             <div class="card mb-3">
@@ -164,11 +179,18 @@ if (isset($_GET['id'])) {
                     <h6 class="mb-0">Informasi Pesanan</h6>
                 </div>
                 <div class="card-body">
+                    <?php if (!empty($order['canteen_name'])): ?>
+                        <div class="mb-2">
+                            <small class="text-muted">Kantin</small>
+                            <p class="mb-0"><strong><?php echo htmlspecialchars($order['canteen_name']); ?></strong></p>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="mb-2">
                         <small class="text-muted">No. Order</small>
                         <p class="mb-0"><strong><?php echo htmlspecialchars($order['order_number']); ?></strong></p>
                     </div>
-                    
+
                     <div class="mb-2">
                         <small class="text-muted">Tanggal</small>
                         <p class="mb-0">
@@ -176,7 +198,7 @@ if (isset($_GET['id'])) {
                             <?php echo formatWaktu($order['created_at']); ?>
                         </p>
                     </div>
-                    
+
                     <div class="mb-2">
                         <small class="text-muted">Tipe Pesanan</small>
                         <p class="mb-0">
@@ -184,7 +206,7 @@ if (isset($_GET['id'])) {
                             <?php echo $order['order_type'] === 'dine_in' ? 'Dine-in' : 'Takeaway'; ?>
                         </p>
                     </div>
-                    
+
                     <div class="mb-2">
                         <small class="text-muted">Metode Pembayaran</small>
                         <p class="mb-0">
@@ -192,7 +214,7 @@ if (isset($_GET['id'])) {
                             <?php echo $order['payment_method'] === 'cash' ? 'Tunai' : 'Transfer'; ?>
                         </p>
                     </div>
-                    
+
                     <div class="mb-2">
                         <small class="text-muted">Status Pembayaran</small>
                         <p class="mb-0">
@@ -201,23 +223,23 @@ if (isset($_GET['id'])) {
                             </span>
                         </p>
                     </div>
-                    
-                    <?php if ($order['notes']): ?>
+
+                    <?php if (!empty($order['notes'])): ?>
                         <div class="mb-2">
                             <small class="text-muted">Catatan</small>
                             <p class="mb-0"><?php echo htmlspecialchars($order['notes']); ?></p>
                         </div>
                     <?php endif; ?>
-                    
+
                     <hr>
-                    
+
                     <div class="d-flex justify-content-between">
                         <h5 class="mb-0">Total</h5>
                         <h5 class="mb-0 text-success"><?php echo formatRupiah($order['total_amount']); ?></h5>
                     </div>
                 </div>
             </div>
-            
+
             <?php if ($order['status'] === 'ready'): ?>
                 <div class="alert alert-success">
                     <i class="bi bi-check-circle"></i>
@@ -225,35 +247,34 @@ if (isset($_GET['id'])) {
                     Silakan ambil pesanan Anda di kantin
                 </div>
             <?php endif; ?>
-            
+
             <a href="/proyek-akhir-kantin-rpl/order/status.php" class="btn btn-outline-primary w-100">
                 <i class="bi bi-arrow-left"></i> Kembali ke Riwayat
             </a>
         </div>
     </div>
-    
+
     <?php
-    
 } else {
-    // Tampilkan riwayat pesanan
-    $orders_query = "SELECT 
-        o.*
-    FROM orders o
-    WHERE o.user_id = $user_id
-    ORDER BY o.created_at DESC";
-    
+    // ============================
+    // MODE: LIST RIWAYAT
+    // ============================
+    $orders_query = "SELECT o.*
+        FROM orders o
+        WHERE o.customer_id = $customer_id
+        ORDER BY o.created_at DESC";
+
     $orders_result = $conn->query($orders_query);
-    
     ?>
-    
+
     <div class="row mb-4">
         <div class="col">
             <h2><i class="bi bi-clock-history"></i> Riwayat Pesanan</h2>
             <p class="text-muted">Lihat semua pesanan Anda</p>
         </div>
     </div>
-    
-    <?php if ($orders_result->num_rows > 0): ?>
+
+    <?php if ($orders_result && $orders_result->num_rows > 0): ?>
         <div class="row">
             <?php while ($order = $orders_result->fetch_assoc()): ?>
                 <div class="col-md-6 mb-4">
@@ -283,11 +304,11 @@ if (isset($_GET['id'])) {
                                     'cancelled' => 'Dibatalkan'
                                 ];
                                 ?>
-                                <span class="badge bg-<?php echo $status_class[$order['status']]; ?>">
-                                    <?php echo $status_text[$order['status']]; ?>
+                                <span class="badge bg-<?php echo $status_class[$order['status']] ?? 'secondary'; ?>">
+                                    <?php echo $status_text[$order['status']] ?? htmlspecialchars($order['status']); ?>
                                 </span>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <p class="mb-1">
                                     <i class="bi bi-<?php echo $order['order_type'] === 'dine_in' ? 'shop' : 'bag'; ?>"></i>
@@ -298,13 +319,13 @@ if (isset($_GET['id'])) {
                                     <?php echo $order['payment_method'] === 'cash' ? 'Tunai' : 'Transfer'; ?>
                                 </p>
                             </div>
-                            
+
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <small class="text-muted">Total</small>
                                     <h5 class="mb-0 text-success"><?php echo formatRupiah($order['total_amount']); ?></h5>
                                 </div>
-                                <a href="/proyek-akhir-kantin-rpl/order/status.php?id=<?php echo $order['id']; ?>" 
+                                <a href="/proyek-akhir-kantin-rpl/order/status.php?id=<?php echo (int)$order['id']; ?>" 
                                    class="btn btn-primary btn-sm">
                                     Lihat Detail <i class="bi bi-arrow-right"></i>
                                 </a>
@@ -328,7 +349,7 @@ if (isset($_GET['id'])) {
             </div>
         </div>
     <?php endif; ?>
-    
+
     <?php
 }
 

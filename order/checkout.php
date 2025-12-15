@@ -3,9 +3,21 @@ $page_title = 'Checkout';
 require_once __DIR__ . '/../config/database.php';
 
 // Cek login
-if (!isLoggedIn() || hasRole('kantin')) {
+if (!isLoggedIn() || !isCustomer()) {
     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
+
+$conn = getDBConnection();
+
+// Ambil customer_id dari session
+$customer_id = (int)($_SESSION['user_id'] ?? 0);
+if ($customer_id <= 0) {
+    die("Error: customer_id tidak valid, silakan login ulang.");
+}
+
+// Ambil notes (boleh kosong)
+$notes = sanitizeInput($_POST['notes'] ?? '');
+$notes_escaped = escapeString($conn, $notes); // WAJIB pakai $conn
 
 // Cek cart
 if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
