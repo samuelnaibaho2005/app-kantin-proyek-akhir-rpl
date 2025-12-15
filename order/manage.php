@@ -2,18 +2,17 @@
 $page_title = 'Kelola Pesanan';
 require_once __DIR__ . '/../config/database.php';
 
-// Cek login dan role
-if (!isLoggedIn() || !hasRole('kantin')) {
+// Cek login dan harus owner
+if (!isLoggedIn() || !isOwner()) {
     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 $conn = getDBConnection();
 
 // Ambil canteen owner yang sedang login
-$canteen_info_id = (int) getOwnerCanteenId();
-if ($canteen_info_id <= 0) {
-    setFlashMessage('error', 'Kantin tidak ditemukan untuk akun ini.');
-    redirect('/proyek-akhir-kantin-rpl/auth/login.php');
+$canteen_info_id = getOwnerCanteenId();
+if (!$canteen_info_id) {
+    die("Error: Canteen info tidak ditemukan. Hubungi administrator.");
 }
 
 /**
@@ -73,16 +72,15 @@ if (isset($_POST['update_status'])) {
 
             if ($check_result->num_rows === 0) {
                 $trans_date = date('Y-m-d');
-                $created_by = (int)($_SESSION['user_id'] ?? 0);
 
                 $description_raw = "Penjualan - Order #{$order['order_number']}";
                 $description = escapeString($conn, $description_raw);
 
                 // INSERT transaksi (ikut canteen_info_id biar rapi dan bisa difilter)
                 $insert_trans = "INSERT INTO transactions 
-                    (transaction_date, type, category, amount, description, order_id, created_by, canteen_info_id) 
+                    (transaction_date, type, category, amount, description, order_id, canteen_info_id) 
                     VALUES 
-                    ('$trans_date', 'income', 'penjualan', {$order['total_amount']}, '$description', $order_id, $created_by, $canteen_info_id)";
+                    ('$trans_date', 'income', 'penjualan', {$order['total_amount']}, '$description', $order_id, $canteen_info_id)";
 
                 if (!$conn->query($insert_trans)) {
                     throw new Exception('Gagal insert transaksi: ' . $conn->error);
@@ -147,11 +145,17 @@ $where_clause = implode(' AND ', $where);
  * =========================
  */
 $orders_query = "SELECT 
-    o.*,
+    o.id,
+    o.order_number,
+    o.total_amount,
+    o.order_type,
+    o.status,
+    o.created_at,
+    o.payment_status,
     u.name as customer_name,
     COUNT(oi.id) as item_count
 FROM orders o
-JOIN users u ON o.user_id = u.id
+JOIN customers u ON o.customer_id = u.id
 LEFT JOIN order_items oi ON o.id = oi.order_id
 WHERE $where_clause
 GROUP BY o.id
@@ -165,6 +169,9 @@ ORDER BY
     o.created_at DESC";
 
 $orders_result = $conn->query($orders_query);
+if (!$orders_result) {
+    die("Query Error: " . $conn->error);
+}
 
 require_once __DIR__ . '/../includes/header.php';
 ?>

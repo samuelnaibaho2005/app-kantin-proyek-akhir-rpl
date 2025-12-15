@@ -16,7 +16,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $category = sanitizeInput($_POST['category']);
     $amount = floatval($_POST['amount']);
     $description = sanitizeInput($_POST['description']);
-    $created_by = $_SESSION['user_id'];
     
     // Validasi
     if (empty($transaction_date)) {
@@ -47,9 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $canteen_info_id = getOwnerCanteenId();
 
         $insert_query = "INSERT INTO transactions 
-            (transaction_date, type, category, amount, description, canteen_info_id, created_by) 
+            (transaction_date, type, category, amount, description, canteen_info_id) 
             VALUES 
-            ('$transaction_date', '$type', '$category_escaped', $amount, '$description_escaped', $canteen_info_id, $created_by)";
+            ('$transaction_date', '$type', '$category_escaped', $amount, '$description_escaped', $canteen_info_id)";
         
         if ($conn->query($insert_query)) {
             setFlashMessage('success', 'Transaksi berhasil ditambahkan!');

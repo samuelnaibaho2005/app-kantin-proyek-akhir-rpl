@@ -318,6 +318,39 @@ $conn->close();
     </div>
 </div>
 
+<!-- QUICK ACTIONS -->
+<div class="row mt-4">
+    <div class="col-md-4">
+        <a href="/proyek-akhir-kantin-rpl/menu/manage.php" class="card text-decoration-none">
+            <div class="card-body text-center">
+                <i class="bi bi-card-list fs-1 text-primary"></i>
+                <h5 class="mt-2">Kelola Menu</h5>
+                <p class="text-muted small">Tambah, edit, atau hapus menu</p>
+            </div>
+        </a>
+    </div>
+    
+    <div class="col-md-4">
+        <a href="/proyek-akhir-kantin-rpl/transaction/index.php" class="card text-decoration-none">
+            <div class="card-body text-center">
+                <i class="bi bi-cash-stack fs-1 text-success"></i>
+                <h5 class="mt-2">Pencatatan Keuangan</h5>
+                <p class="text-muted small">Input pemasukan dan pengeluaran</p>
+            </div>
+        </a>
+    </div>
+    
+    <div class="col-md-4">
+        <a href="/proyek-akhir-kantin-rpl/order/manage.php" class="card text-decoration-none">
+            <div class="card-body text-center">
+                <i class="bi bi-receipt fs-1 text-info"></i>
+                <h5 class="mt-2">Kelola Pesanan</h5>
+                <p class="text-muted small">Lihat dan update status pesanan</p>
+            </div>
+        </a>
+    </div>
+</div>
+
 <!-- Chart.js Script -->
 <script>
     const ctx = document.getElementById('salesChart').getContext('2d');
