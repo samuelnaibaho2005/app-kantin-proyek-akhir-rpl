@@ -3,7 +3,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Redirect jika sudah login
 if (isLoggedIn()) {
-    $redirect = hasRole('kantin') ? '/proyek-akhir-kantin-rpl/dashboard/kantin.php' : '/proyek-akhir-kantin-rpl/dashboard/customer.php';
+    $redirect = isOwner() ? '/proyek-akhir-kantin-rpl/dashboard/owner.php' : '/proyek-akhir-kantin-rpl/dashboard/customer.php';
     redirect($redirect);
 }
 
@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $phone = sanitizeInput($_POST['phone']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
-    $role = sanitizeInput($_POST['role']);
+    $user_type = sanitizeInput($_POST['user_type']);
     $nim = isset($_POST['nim']) ? sanitizeInput($_POST['nim']) : null;
     
     // Validasi
@@ -32,12 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Nomor telepon harus diisi';
     }
     
-    if (!in_array($role, ['kantin', 'mahasiswa', 'staf'])) {
-        $errors[] = 'Role tidak valid';
+    if (!in_array($user_type, ['owner', 'customer'])) {
+        $errors[] = 'Tipe user tidak valid';
     }
     
-    if (in_array($role, ['mahasiswa', 'staf']) && empty($nim)) {
-        $errors[] = 'NIM/ID harus diisi untuk mahasiswa dan staf';
+    if ($user_type === 'customer' && empty($nim)) {
+        $errors[] = 'NIM/ID harus diisi untuk customer';
     }
     
     if (empty($password)) {
@@ -50,35 +50,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Konfirmasi password tidak cocok';
     }
     
-    // Cek email sudah terdaftar atau belum
+    // Cek email sudah terdaftar atau belum (di tabel yang sesuai)
     if (empty($errors)) {
         $conn = getDBConnection();
         $email_escaped = escapeString($conn, $email);
         
-        $check_query = "SELECT id FROM users WHERE email = '$email_escaped' LIMIT 1";
+        $table = ($user_type === 'owner') ? 'owners' : 'customers';
+        $check_query = "SELECT id FROM $table WHERE email = '$email_escaped' LIMIT 1";
         $check_result = $conn->query($check_query);
         
         if ($check_result->num_rows > 0) {
-            $errors[] = 'Email sudah terdaftar';
+            $errors[] = 'Email sudah terdaftar sebagai ' . ($user_type === 'owner' ? 'owner' : 'customer');
         }
         
         if (empty($errors)) {
             // Hash password
             $hashed_password = hashPassword($password);
-            
-            // Insert ke database
             $name_escaped = escapeString($conn, $name);
             $phone_escaped = escapeString($conn, $phone);
-            $role_escaped = escapeString($conn, $role);
-            $nim_escaped = $nim ? "'" . escapeString($conn, $nim) . "'" : 'NULL';
             
-            $insert_query = "INSERT INTO users (name, email, password, phone, role, nim, is_active) 
-                           VALUES ('$name_escaped', '$email_escaped', '$hashed_password', 
-                                   '$phone_escaped', '$role_escaped', $nim_escaped, TRUE)";
+            if ($user_type === 'owner') {
+                // Insert ke tabel owners
+                $insert_query = "INSERT INTO owners (name, email, password, phone, is_active) 
+                               VALUES ('$name_escaped', '$email_escaped', '$hashed_password', '$phone_escaped', TRUE)";
+            } else {
+                // Insert ke tabel customers
+                $nim_escaped = escapeString($conn, $nim);
+                $insert_query = "INSERT INTO customers (name, email, password, phone, nim) 
+                               VALUES ('$name_escaped', '$email_escaped', '$hashed_password', '$phone_escaped', '$nim_escaped')";
+            }
             
             if ($conn->query($insert_query)) {
                 $success = 'Registrasi berhasil! Silakan login.';
-                // Reset form
                 $_POST = [];
             } else {
                 $errors[] = 'Gagal menyimpan data: ' . $conn->error;
@@ -108,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="card-header">
                 <i class="bi bi-person-plus fs-1"></i>
                 <h4 class="mt-2">Registrasi Akun</h4>
-                <p class="mb-0 small">Buat akun baru untuk mulai memesan</p>
+                <p class="mb-0 small">Buat akun baru untuk mulai menggunakan</p>
             </div>
             <div class="card-body">
                 <?php if (!empty($errors)): ?>
@@ -133,6 +136,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <form method="POST" action="" id="registerForm">
                     <div class="mb-3">
+                        <label class="form-label">Daftar Sebagai <span class="text-danger">*</span></label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="user_type" 
+                                       id="owner_type" value="owner" required
+                                       <?php echo (isset($_POST['user_type']) && $_POST['user_type'] === 'owner') ? 'checked' : ''; ?>>
+                                <label class="form-check-label" for="owner_type">
+                                    <i class="bi bi-shop"></i> Owner/Pemilik Kantin
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="user_type" 
+                                       id="customer_type" value="customer" required
+                                       <?php echo (isset($_POST['user_type']) && $_POST['user_type'] === 'customer') ? 'checked' : ''; ?>>
+                                <label class="form-check-label" for="customer_type">
+                                    <i class="bi bi-person"></i> Customer (Mahasiswa/Staf)
+                                </label>
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            Pilih "Owner" jika Anda pemilik warung/kantin
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label for="name" class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="name" name="name" 
                                placeholder="Masukkan nama lengkap" required
@@ -153,29 +181,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>">
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="role" class="form-label">Role <span class="text-danger">*</span></label>
-                        <select class="form-select" id="role" name="role" required>
-                            <option value="">Pilih role</option>
-                            <option value="kantin" <?php echo (isset($_POST['role']) && $_POST['role'] === 'kantin') ? 'selected' : ''; ?>>
-                                Kantin (Pemilik)
-                            </option>
-                            <option value="mahasiswa" <?php echo (isset($_POST['role']) && $_POST['role'] === 'mahasiswa') ? 'selected' : ''; ?>>
-                                Mahasiswa
-                            </option>
-                            <option value="staf" <?php echo (isset($_POST['role']) && $_POST['role'] === 'staf') ? 'selected' : ''; ?>>
-                                Staf
-                            </option>
-                        </select>
-                        <small class="text-muted">Pilih "Kantin" jika Anda pemilik kantin</small>
-                    </div>
-                    
                     <div class="mb-3" id="nimField" style="display: none;">
-                        <label for="nim" class="form-label">NIM / ID <span class="text-danger">*</span></label>
+                        <label for="nim" class="form-label">NIM / ID Staf <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="nim" name="nim" 
                                placeholder="Masukkan NIM atau ID Staf"
                                value="<?php echo isset($_POST['nim']) ? htmlspecialchars($_POST['nim']) : ''; ?>">
-                        <small class="text-muted">Wajib diisi untuk mahasiswa dan staf</small>
+                        <small class="text-muted">Wajib diisi untuk customer (mahasiswa/staf)</small>
                     </div>
                     
                     <div class="mb-3">
@@ -220,24 +231,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Show/hide NIM field based on role
-    document.getElementById('role').addEventListener('change', function() {
-        const nimField = document.getElementById('nimField');
-        const nimInput = document.getElementById('nim');
-        
-        if (this.value === 'mahasiswa' || this.value === 'staf') {
-            nimField.style.display = 'block';
-            nimInput.required = true;
-        } else {
-            nimField.style.display = 'none';
-            nimInput.required = false;
-            nimInput.value = '';
-        }
+    // Show/hide NIM field based on user type
+    document.querySelectorAll('input[name="user_type"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const nimField = document.getElementById('nimField');
+            const nimInput = document.getElementById('nim');
+            
+            if (this.value === 'customer') {
+                nimField.style.display = 'block';
+                nimInput.required = true;
+            } else {
+                nimField.style.display = 'none';
+                nimInput.required = false;
+                nimInput.value = '';
+            }
+        });
     });
     
-    // Trigger on page load jika ada value dari POST
-    if (document.getElementById('role').value) {
-        document.getElementById('role').dispatchEvent(new Event('change'));
+    // Trigger on page load if value exists
+    const checkedRadio = document.querySelector('input[name="user_type"]:checked');
+    if (checkedRadio) {
+        checkedRadio.dispatchEvent(new Event('change'));
     }
     
     // Password validation
@@ -251,7 +265,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             return false;
         }
         
-        // Check password strength
         if (password.length < 8) {
             e.preventDefault();
             alert('Password minimal 8 karakter!');

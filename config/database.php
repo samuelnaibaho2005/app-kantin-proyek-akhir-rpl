@@ -1,15 +1,15 @@
 <?php
 /**
- * Database Configuration
+ * Database Configuration - Multi-Tenant Version
  * 
- * File ini berisi konfigurasi koneksi database dan fungsi-fungsi helper
+ * Support untuk Owners dan Customers terpisah
  */
 
 // Konfigurasi Database
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');
-define('DB_NAME', 'kantin_kampus');
+define('DB_NAME', 'kantin_kampus_v2');
 
 // Timezone
 date_default_timezone_set('Asia/Jakarta');
@@ -69,13 +69,6 @@ function generateOrderNumber() {
 }
 
 /**
- * Fungsi untuk generate reset token
- */
-function generateResetToken() {
-    return bin2hex(random_bytes(32));
-}
-
-/**
  * Fungsi untuk format rupiah
  */
 function formatRupiah($amount) {
@@ -110,14 +103,64 @@ function formatWaktu($datetime) {
  * Fungsi untuk cek apakah user sudah login
  */
 function isLoggedIn() {
-    return isset($_SESSION['user_id']) && isset($_SESSION['role']);
+    return isset($_SESSION['user_id']) && isset($_SESSION['user_type']);
 }
 
 /**
- * Fungsi untuk cek role user
+ * Fungsi untuk cek tipe user (owner atau customer)
  */
+function getUserType() {
+    return $_SESSION['user_type'] ?? null;
+}
+
+/**
+ * Fungsi untuk cek apakah owner
+ */
+function isOwner() {
+    return isLoggedIn() && getUserType() === 'owner';
+}
+
+/**
+ * Fungsi untuk cek apakah customer
+ */
+function isCustomer() {
+    return isLoggedIn() && getUserType() === 'customer';
+}
+
 function hasRole($role) {
-    return isset($_SESSION['role']) && $_SESSION['role'] === $role;
+    // kompatibel dengan kode lama
+    if ($role === 'kantin' || $role === 'owner') return isOwner();
+    if ($role === 'customer' || $role === 'pembeli') return isCustomer();
+    return false;
+}
+
+/**
+ * Fungsi untuk get canteen_info_id dari owner yang login
+ */
+function getOwnerCanteenId() {
+    if (!isOwner()) {
+        return null;
+    }
+    
+    if (isset($_SESSION['canteen_info_id'])) {
+        return $_SESSION['canteen_info_id'];
+    }
+    
+    // Ambil dari database
+    $conn = getDBConnection();
+    $owner_id = $_SESSION['user_id'];
+    $query = "SELECT id FROM canteen_info WHERE owner_id = $owner_id LIMIT 1";
+    $result = $conn->query($query);
+    
+    if ($result && $result->num_rows > 0) {
+        $canteen = $result->fetch_assoc();
+        $_SESSION['canteen_info_id'] = $canteen['id'];
+        $conn->close();
+        return $canteen['id'];
+    }
+    
+    $conn->close();
+    return null;
 }
 
 /**
@@ -158,7 +201,6 @@ function getFlashMessage() {
 function uploadFile($file, $targetDir) {
     $targetDir = rtrim($targetDir, '/') . '/';
     
-    // Create directory if not exists
     if (!file_exists($targetDir)) {
         mkdir($targetDir, 0755, true);
     }
@@ -167,24 +209,20 @@ function uploadFile($file, $targetDir) {
     $targetFile = $targetDir . $fileName;
     $imageFileType = strtolower(pathinfo($targetFile, PATHINFO_EXTENSION));
     
-    // Check if image file is actual image
     $check = getimagesize($file['tmp_name']);
     if ($check === false) {
         return ['success' => false, 'message' => 'File bukan gambar'];
     }
     
-    // Check file size (max 2MB)
     if ($file['size'] > 2000000) {
         return ['success' => false, 'message' => 'Ukuran file terlalu besar (max 2MB)'];
     }
     
-    // Allow certain file formats
     $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
     if (!in_array($imageFileType, $allowedTypes)) {
         return ['success' => false, 'message' => 'Hanya file JPG, JPEG, PNG & GIF yang diperbolehkan'];
     }
     
-    // Upload file
     if (move_uploaded_file($file['tmp_name'], $targetFile)) {
         return ['success' => true, 'filename' => $fileName, 'path' => $targetFile];
     } else {
@@ -211,29 +249,73 @@ function isValidEmail($email) {
 
 /**
  * Fungsi untuk validasi password
- * Minimal 8 karakter, harus ada huruf, angka, dan simbol
  */
 function isValidPassword($password) {
     if (strlen($password) < 8) {
         return false;
     }
     
-    // Cek ada huruf
     if (!preg_match('/[a-zA-Z]/', $password)) {
         return false;
     }
     
-    // Cek ada angka
     if (!preg_match('/[0-9]/', $password)) {
         return false;
     }
     
-    // Cek ada simbol
     if (!preg_match('/[^a-zA-Z0-9]/', $password)) {
         return false;
     }
     
     return true;
+}
+
+/**
+ * Fungsi untuk validasi cart - pastikan hanya 1 canteen
+ */
+function validateCartCanteen($menu_id) {
+    $conn = getDBConnection();
+    
+    // Get canteen_info_id dari menu
+    $menu_query = "SELECT canteen_info_id FROM menus WHERE id = $menu_id LIMIT 1";
+    $menu_result = $conn->query($menu_query);
+    
+    if (!$menu_result || $menu_result->num_rows === 0) {
+        $conn->close();
+        return ['valid' => false, 'message' => 'Menu tidak ditemukan'];
+    }
+    
+    $menu = $menu_result->fetch_assoc();
+    $menu_canteen_id = $menu['canteen_info_id'];
+    
+    // Cek cart canteen_id
+    if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
+        $cart_canteen_id = $_SESSION['cart_canteen_id'] ?? null;
+        
+        if ($cart_canteen_id && $cart_canteen_id != $menu_canteen_id) {
+            // Get nama canteen untuk pesan error yang jelas
+            $canteen_query = "SELECT canteen_name FROM canteen_info WHERE id = $cart_canteen_id LIMIT 1";
+            $canteen_result = $conn->query($canteen_query);
+            $canteen = $canteen_result->fetch_assoc();
+            
+            $conn->close();
+            return [
+                'valid' => false, 
+                'message' => 'Keranjang hanya bisa dari 1 kantin! Saat ini keranjang Anda berisi menu dari "' . $canteen['canteen_name'] . '". Kosongkan keranjang terlebih dahulu.'
+            ];
+        }
+    }
+    
+    $conn->close();
+    return ['valid' => true, 'canteen_id' => $menu_canteen_id];
+}
+
+/**
+ * Fungsi untuk clear cart
+ */
+function clearCart() {
+    unset($_SESSION['cart']);
+    unset($_SESSION['cart_canteen_id']);
 }
 
 ?>

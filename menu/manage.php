@@ -3,9 +3,10 @@ $page_title = 'Kelola Menu';
 require_once __DIR__ . '/../config/database.php';
 
 // Cek login dan role
-if (!isLoggedIn() || !hasRole('kantin')) {
+if (!isLoggedIn() || !isOwner()) {
     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
+
 
 require_once __DIR__ . '/../includes/header.php';
 
@@ -37,12 +38,15 @@ if (!empty($search)) {
 $where_clause = implode(' AND ', $where);
 
 // Get menus
+$canteen_info_id = getOwnerCanteenId();
+
 $query = "SELECT 
     m.*,
     c.name as category_name
 FROM menus m
 LEFT JOIN categories c ON m.category_id = c.id
-WHERE $where_clause
+WHERE m.canteen_info_id = $canteen_info_id  -- KUNCI: Filter by canteen
+  AND $where_clause
 ORDER BY m.created_at DESC";
 
 $result = $conn->query($query);

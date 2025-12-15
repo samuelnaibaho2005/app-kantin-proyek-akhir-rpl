@@ -65,4 +65,9 @@ echo json_encode([
     'cart_count' => count($_SESSION['cart']),
     'total' => $total
 ]);
+
+if (empty($_SESSION['cart'])) {
+    unset($_SESSION['cart_canteen_id']);
+}
+
 ?>

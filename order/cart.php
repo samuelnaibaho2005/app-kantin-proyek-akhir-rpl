@@ -9,6 +9,8 @@ if (!isLoggedIn() || hasRole('kantin')) {
 
 require_once __DIR__ . '/../includes/header.php';
 
+$conn = getDBConnection();
+
 // Initialize cart
 if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
@@ -43,6 +45,26 @@ foreach ($cart as $item) {
             </div>
         </div>
     </div>
+    
+   <div class="alert alert-info">
+     <i class="bi bi-shop"></i>
+     <strong>Pesanan dari:</strong>
+     <?php
+        $canteen_id = (int)($_SESSION['cart_canteen_id'] ?? 0);
+        $canteen = ['canteen_name' => '-'];
+        if ($canteen_id > 0) {
+            $q = "SELECT canteen_name FROM canteen_info WHERE id = $canteen_id LIMIT 1";
+            $r = $conn->query($q);
+            if ($r && $r->num_rows > 0) $canteen = $r->fetch_assoc();
+        }
+        echo htmlspecialchars($canteen['canteen_name']);
+     ?>
+     <a href="/proyek-akhir-kantin-rpl/api/clear-cart.php" class="btn btn-sm btn-outline-danger float-end"
+        onclick="return confirm('Yakin ingin kosongkan keranjang?')">
+        <i class="bi bi-trash"></i> Kosongkan Keranjang
+     </a>
+   </div>
+
 <?php else: ?>
     <div class="row">
         <!-- CART ITEMS -->
@@ -162,7 +184,7 @@ foreach ($cart as $item) {
             }
             
             // AJAX call
-            fetch('/proyek-akhir-kantin-rpl/api/update-cart.php', {
+            fetch('/proyek-akhir-kantin-rpl/api/update-to-cart.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

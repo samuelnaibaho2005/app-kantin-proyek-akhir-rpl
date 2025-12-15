@@ -3,13 +3,14 @@ $page_title = 'Menu Kantin';
 require_once __DIR__ . '/../config/database.php';
 
 // Cek login
-if (!isLoggedIn()) {
+if (!isLoggedIn() || !isCustomer()) {
     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
+
 // Kantin tidak bisa akses halaman ini
 if (hasRole('kantin')) {
-    redirect('/proyek-akhir-kantin-rpl/dashboard/kantin.php');
+    redirect('/proyek-akhir-kantin-rpl/dashboard/owner.php');
 }
 
 require_once __DIR__ . '/../includes/header.php';
@@ -20,6 +21,13 @@ $conn = getDBConnection();
 $category_filter = isset($_GET['category']) ? intval($_GET['category']) : 0;
 $search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
 
+$canteen_filter = isset($_GET['canteen']) ? intval($_GET['canteen']) : 0;
+
+if (!empty($search)) {
+    $search_escaped = escapeString($conn, $search);
+    $where[] = "(m.name LIKE '%$search_escaped%' OR m.description LIKE '%$search_escaped%')";
+}
+
 // Build query
 $where = ["m.deleted_at IS NULL", "m.is_available = TRUE"];
 
@@ -27,21 +35,20 @@ if ($category_filter > 0) {
     $where[] = "m.category_id = $category_filter";
 }
 
-if (!empty($search)) {
-    $search_escaped = escapeString($conn, $search);
-    $where[] = "(m.name LIKE '%$search_escaped%' OR m.description LIKE '%$search_escaped%')";
+if ($canteen_filter > 0) {
+    $where[] = "m.canteen_info_id = $canteen_filter";  // Filter by canteen (optional)
 }
 
-$where_clause = implode(' AND ', $where);
-
-// Get menus
 $query = "SELECT 
     m.*,
-    c.name as category_name
+    c.name as category_name,
+    ci.canteen_name,
+    ci.id as canteen_info_id
 FROM menus m
 LEFT JOIN categories c ON m.category_id = c.id
-WHERE $where_clause
-ORDER BY m.created_at DESC";
+LEFT JOIN canteen_info ci ON m.canteen_info_id = ci.id
+WHERE " . implode(' AND ', $where) . "
+ORDER BY ci.canteen_name, m.name ASC";
 
 $result = $conn->query($query);
 

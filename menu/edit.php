@@ -2,9 +2,14 @@
 $page_title = 'Edit Menu';
 require_once __DIR__ . '/../config/database.php';
 
-// Cek login dan role
-if (!isLoggedIn() || !hasRole('kantin')) {
+// Cek login dan harus owner
+if (!isLoggedIn() || !isOwner()) {
     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
+}
+
+$canteen_info_id = getOwnerCanteenId();
+if (!$canteen_info_id) {
+    die("Error: Canteen info tidak ditemukan.");
 }
 
 $conn = getDBConnection();
@@ -12,15 +17,24 @@ $errors = [];
 
 // Get menu ID
 if (!isset($_GET['id'])) {
-    setFlashMessage('error', 'ID menu tidak valid');
     redirect('/proyek-akhir-kantin-rpl/menu/manage.php');
 }
 
 $menu_id = intval($_GET['id']);
 
-// Toggle status (quick action from manage page)
+// Toggle status (quick action dari manage page)
 if (isset($_POST['toggle_status'])) {
     $new_status = intval($_POST['toggle_status']);
+    
+    // VALIDASI OWNERSHIP
+    $check_query = "SELECT id FROM menus WHERE id = $menu_id AND canteen_info_id = $canteen_info_id LIMIT 1";
+    $check_result = $conn->query($check_query);
+    
+    if ($check_result->num_rows === 0) {
+        setFlashMessage('error', 'Menu tidak ditemukan atau bukan milik warung Anda');
+        redirect('/proyek-akhir-kantin-rpl/menu/manage.php');
+    }
+    
     $update_query = "UPDATE menus SET is_available = $new_status WHERE id = $menu_id";
     
     if ($conn->query($update_query)) {
@@ -32,12 +46,16 @@ if (isset($_POST['toggle_status'])) {
     redirect('/proyek-akhir-kantin-rpl/menu/manage.php');
 }
 
-// Get menu data
-$menu_query = "SELECT * FROM menus WHERE id = $menu_id AND deleted_at IS NULL LIMIT 1";
+// Get menu data dengan VALIDASI OWNERSHIP
+$menu_query = "SELECT * FROM menus 
+               WHERE id = $menu_id 
+                 AND canteen_info_id = $canteen_info_id 
+                 AND deleted_at IS NULL 
+               LIMIT 1";
 $menu_result = $conn->query($menu_query);
 
 if ($menu_result->num_rows === 0) {
-    setFlashMessage('error', 'Menu tidak ditemukan');
+    setFlashMessage('error', 'Menu tidak ditemukan atau bukan milik warung Anda');
     redirect('/proyek-akhir-kantin-rpl/menu/manage.php');
 }
 
@@ -103,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['toggle_status'])) {
             stock = $stock,
             is_available = $is_available,
             image_url = $image_value
-            WHERE id = $menu_id";
+            WHERE id = $menu_id AND canteen_info_id = $canteen_info_id";
         
         if ($conn->query($update_query)) {
             setFlashMessage('success', 'Menu berhasil diupdate!');
@@ -131,7 +149,7 @@ require_once __DIR__ . '/../includes/header.php';
         <h2><i class="bi bi-pencil"></i> Edit Menu</h2>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/proyek-akhir-kantin-rpl/dashboard/kantin.php">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="/proyek-akhir-kantin-rpl/dashboard/owner.php">Dashboard</a></li>
                 <li class="breadcrumb-item"><a href="/proyek-akhir-kantin-rpl/menu/manage.php">Kelola Menu</a></li>
                 <li class="breadcrumb-item active">Edit Menu</li>
             </ol>

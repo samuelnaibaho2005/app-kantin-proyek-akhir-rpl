@@ -41,11 +41,11 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
         <div class="collapse navbar-collapse" id="navbarNav">
             <?php if (isLoggedIn()): ?>
                 <ul class="navbar-nav me-auto">
-                    <?php if (hasRole('kantin')): ?>
-                        <!-- Menu untuk Kantin -->
+                    <?php if (isOwner()): ?>
+                        <!-- Menu untuk Owner -->
                         <li class="nav-item">
-                            <a class="nav-link <?php echo $current_page == 'kantin' ? 'active' : ''; ?>" 
-                               href="/proyek-akhir-kantin-rpl/dashboard/kantin.php">
+                            <a class="nav-link <?php echo $current_page == 'owner' ? 'active' : ''; ?>" 
+                               href="/proyek-akhir-kantin-rpl/dashboard/owner.php">
                                 <i class="bi bi-speedometer2"></i> Dashboard
                             </a>
                         </li>
@@ -68,7 +68,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                             </a>
                         </li>
                     <?php else: ?>
-                        <!-- Menu untuk Customer (Mahasiswa/Staf) -->
+                        <!-- Menu untuk Customer -->
                         <li class="nav-item">
                             <a class="nav-link <?php echo $current_page == 'customer' ? 'active' : ''; ?>" 
                                href="/proyek-akhir-kantin-rpl/dashboard/customer.php">
@@ -91,7 +91,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                 </ul>
                 
                 <ul class="navbar-nav ms-auto">
-                    <?php if (!hasRole('kantin')): ?>
+                    <?php if (isCustomer()): ?>
                         <!-- Shopping Cart untuk Customer -->
                         <li class="nav-item">
                             <a class="nav-link position-relative" href="/proyek-akhir-kantin-rpl/order/cart.php">
@@ -110,6 +110,9 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> 
                             <?php echo isset($_SESSION['name']) ? $_SESSION['name'] : 'User'; ?>
+                            <span class="badge bg-secondary small">
+                                <?php echo isOwner() ? 'Owner' : 'Customer'; ?>
+                            </span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
@@ -160,4 +163,4 @@ if ($flash):
 <?php endif; ?>
 
 <!-- Main Content Container -->
-<div class="container my-4"></div>
+<div class="container my-4">
