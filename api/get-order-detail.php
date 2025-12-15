@@ -1,118 +1,192 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 
-if (!isLoggedIn() || !hasRole('kantin')) {
-    echo '<div class="alert alert-danger">Unauthorized</div>';
+// wajib login owner
+if (!isLoggedIn() || !isOwner()) {
+    http_response_code(403);
+    echo '<div class="alert alert-danger">Akses ditolak.</div>';
     exit;
 }
 
-if (!isset($_GET['id'])) {
-    echo '<div class="alert alert-danger">Invalid request</div>';
-    exit;
-}
-
-$order_id = intval($_GET['id']);
 $conn = getDBConnection();
 
-// Get order detail
-$order_query = "SELECT 
-    o.*,
-    u.name as customer_name,
-    u.phone as customer_phone
-FROM orders o
-JOIN users u ON o.user_id = u.id
-WHERE o.id = $order_id
-LIMIT 1";
+$order_id = (int)($_GET['id'] ?? 0);
+$canteen_info_id = (int)(getOwnerCanteenId() ?? 0);
 
-$order_result = $conn->query($order_query);
-
-if ($order_result->num_rows === 0) {
-    echo '<div class="alert alert-danger">Pesanan tidak ditemukan</div>';
+if ($order_id <= 0 || $canteen_info_id <= 0) {
+    http_response_code(400);
+    echo '<div class="alert alert-danger">Permintaan tidak valid.</div>';
     exit;
 }
 
-$order = $order_result->fetch_assoc();
+/**
+ * Ambil order utama + customer
+ * NOTE: pakai customers, bukan users
+ */
+$order_sql = "
+    SELECT
+        o.*,
+        c.name  AS customer_name,
+        c.email AS customer_email
+    FROM orders o
+    JOIN customers c ON o.customer_id = c.id
+    WHERE o.id = ? AND o.canteen_info_id = ?
+    LIMIT 1
+";
 
-// Get order items
-$items_query = "SELECT 
-    oi.*,
-    m.name as menu_name,
-    m.image_url
-FROM order_items oi
-JOIN menus m ON oi.menu_id = m.id
-WHERE oi.order_id = $order_id";
+$stmt = $conn->prepare($order_sql);
+if (!$stmt) {
+    http_response_code(500);
+    echo '<div class="alert alert-danger">Query error: ' . htmlspecialchars($conn->error) . '</div>';
+    exit;
+}
 
-$items_result = $conn->query($items_query);
+$stmt->bind_param("ii", $order_id, $canteen_info_id);
+$stmt->execute();
+$order_res = $stmt->get_result();
+
+if (!$order_res || $order_res->num_rows === 0) {
+    http_response_code(404);
+    echo '<div class="alert alert-warning">Detail pesanan tidak ditemukan.</div>';
+    $stmt->close();
+    $conn->close();
+    exit;
+}
+
+$order = $order_res->fetch_assoc();
+$stmt->close();
+
+/**
+ * Ambil item pesanan
+ * Pastikan nama kolom foreign key konsisten: order_items.order_id dan order_items.menu_id
+ */
+$items_sql = "
+    SELECT
+        oi.*,
+        m.name AS menu_name,
+        m.image_url
+    FROM order_items oi
+    JOIN menus m ON oi.menu_id = m.id
+    WHERE oi.order_id = ?
+    ORDER BY oi.id ASC
+";
+
+$stmt2 = $conn->prepare($items_sql);
+if (!$stmt2) {
+    http_response_code(500);
+    echo '<div class="alert alert-danger">Query items error: ' . htmlspecialchars($conn->error) . '</div>';
+    $conn->close();
+    exit;
+}
+
+$stmt2->bind_param("i", $order_id);
+$stmt2->execute();
+$items_res = $stmt2->get_result();
+
+/** mapping status */
+$status_class = [
+    'pending'    => 'warning',
+    'processing' => 'info',
+    'ready'      => 'primary',
+    'completed'  => 'success',
+    'cancelled'  => 'danger'
+];
+$status_text = [
+    'pending'    => 'Pending',
+    'processing' => 'Diproses',
+    'ready'      => 'Siap',
+    'completed'  => 'Selesai',
+    'cancelled'  => 'Dibatalkan'
+];
+
 ?>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-6">
+            <h5 class="mb-2">Order #<?php echo htmlspecialchars($order['order_number']); ?></h5>
+            <div class="mb-2">
+                <span class="badge bg-<?php echo $status_class[$order['status']] ?? 'secondary'; ?>">
+                    <?php echo $status_text[$order['status']] ?? htmlspecialchars($order['status']); ?>
+                </span>
+            </div>
 
-<div class="row">
-    <div class="col-md-6">
-        <h6>Informasi Customer</h6>
-        <p class="mb-1"><strong><?php echo htmlspecialchars($order['customer_name']); ?></strong></p>
-        <p class="mb-1"><i class="bi bi-telephone"></i> <?php echo htmlspecialchars($order['customer_phone']); ?></p>
-        <p class="mb-3">
-            <small class="text-muted">
-                Order: <?php echo htmlspecialchars($order['order_number']); ?>
-            </small>
-        </p>
-    </div>
-    
-    <div class="col-md-6">
-        <h6>Detail Pesanan</h6>
-        <p class="mb-1">
-            <i class="bi bi-<?php echo $order['order_type'] === 'dine_in' ? 'shop' : 'bag'; ?>"></i>
-            <?php echo $order['order_type'] === 'dine_in' ? 'Dine-in' : 'Takeaway'; ?>
-        </p>
-        <p class="mb-1">
-            <i class="bi bi-<?php echo $order['payment_method'] === 'cash' ? 'cash' : 'bank'; ?>"></i>
-            <?php echo $order['payment_method'] === 'cash' ? 'Tunai' : 'Transfer'; ?>
-        </p>
-        <p class="mb-1">
-            <i class="bi bi-calendar"></i>
-            <?php echo formatTanggal($order['created_at']); ?> 
-            <?php echo formatWaktu($order['created_at']); ?>
-        </p>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item px-0">
+                    <small class="text-muted">Customer</small><br>
+                    <strong><?php echo htmlspecialchars($order['customer_name']); ?></strong>
+                    <?php if (!empty($order['customer_email'])): ?>
+                        <div><small class="text-muted"><?php echo htmlspecialchars($order['customer_email']); ?></small></div>
+                    <?php endif; ?>
+                </li>
+                <li class="list-group-item px-0">
+                    <small class="text-muted">Waktu Order</small><br>
+                    <strong><?php echo formatTanggal($order['created_at']); ?> <?php echo formatWaktu($order['created_at']); ?></strong>
+                </li>
+                <li class="list-group-item px-0">
+                    <small class="text-muted">Tipe</small><br>
+                    <strong><?php echo ($order['order_type'] === 'dine_in') ? 'Dine-in' : 'Takeaway'; ?></strong>
+                </li>
+                <li class="list-group-item px-0">
+                    <small class="text-muted">Pembayaran</small><br>
+                    <strong><?php echo ($order['payment_method'] === 'cash') ? 'Tunai' : 'Transfer'; ?></strong>
+                    <span class="ms-2 badge bg-<?php echo ($order['payment_status'] === 'paid') ? 'success' : 'warning'; ?>">
+                        <?php echo ($order['payment_status'] === 'paid') ? 'Lunas' : 'Belum Bayar'; ?>
+                    </span>
+                </li>
+                <?php if (!empty($order['notes'])): ?>
+                    <li class="list-group-item px-0">
+                        <small class="text-muted">Catatan</small><br>
+                        <?php echo htmlspecialchars($order['notes']); ?>
+                    </li>
+                <?php endif; ?>
+            </ul>
+        </div>
+
+        <div class="col-md-6">
+            <h6 class="mb-3">Item Pesanan</h6>
+
+            <?php if ($items_res && $items_res->num_rows > 0): ?>
+                <?php while ($it = $items_res->fetch_assoc()): ?>
+                    <div class="d-flex align-items-center border-bottom pb-2 mb-2">
+                        <div style="width:56px;height:56px" class="me-3">
+                            <?php if (!empty($it['image_url'])): ?>
+                                <img
+                                    src="/proyek-akhir-kantin-rpl/uploads/menus/<?php echo htmlspecialchars($it['image_url']); ?>"
+                                    class="img-fluid rounded"
+                                    alt="<?php echo htmlspecialchars($it['menu_name']); ?>"
+                                    style="width:56px;height:56px;object-fit:cover;"
+                                >
+                            <?php else: ?>
+                                <div class="bg-secondary rounded d-flex justify-content-center align-items-center"
+                                     style="width:56px;height:56px;">
+                                    <i class="bi bi-image text-white"></i>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold"><?php echo htmlspecialchars($it['menu_name']); ?></div>
+                            <small class="text-muted">
+                                <?php echo formatRupiah($it['price']); ?> x <?php echo (int)$it['quantity']; ?>
+                            </small>
+                        </div>
+
+                        <div class="text-end">
+                            <div class="fw-bold"><?php echo formatRupiah($it['subtotal']); ?></div>
+                        </div>
+                    </div>
+                <?php endwhile; ?>
+
+                <div class="d-flex justify-content-between mt-3">
+                    <span class="fw-semibold">Total</span>
+                    <span class="fw-bold text-success"><?php echo formatRupiah($order['total_amount']); ?></span>
+                </div>
+            <?php else: ?>
+                <div class="alert alert-warning">Item pesanan tidak ditemukan.</div>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
-
-<?php if ($order['notes']): ?>
-    <div class="alert alert-info mt-3">
-        <strong>Catatan:</strong> <?php echo htmlspecialchars($order['notes']); ?>
-    </div>
-<?php endif; ?>
-
-<hr>
-
-<h6>Item Pesanan</h6>
-<div class="table-responsive">
-    <table class="table table-sm">
-        <thead>
-            <tr>
-                <th>Menu</th>
-                <th>Harga</th>
-                <th>Qty</th>
-                <th class="text-end">Subtotal</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php while ($item = $items_result->fetch_assoc()): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($item['menu_name']); ?></td>
-                    <td><?php echo formatRupiah($item['price']); ?></td>
-                    <td><?php echo $item['quantity']; ?></td>
-                    <td class="text-end"><?php echo formatRupiah($item['subtotal']); ?></td>
-                </tr>
-            <?php endwhile; ?>
-        </tbody>
-        <tfoot>
-            <tr>
-                <th colspan="3" class="text-end">Total:</th>
-                <th class="text-end text-success"><?php echo formatRupiah($order['total_amount']); ?></th>
-            </tr>
-        </tfoot>
-    </table>
-</div>
-
 <?php
+$stmt2->close();
 $conn->close();
-?>

@@ -129,6 +129,7 @@ $photo = !empty($user['photo_url'])
                             <div class="col-sm-4 text-muted">ID Kantin</div>
                             <div class="col-sm-8"><?php echo (int)$canteen['id']; ?></div>
                         </div>
+
                     <?php else: ?>
                         <div class="alert alert-warning mb-0">
                             Data kantin (canteen_info) belum ditemukan untuk akun owner ini.
