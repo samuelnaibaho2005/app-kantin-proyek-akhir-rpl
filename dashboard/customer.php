@@ -1,332 +1,252 @@
 <?php
-$page_title = 'Home';
+$page_title = 'Dashboard Customer';
 require_once __DIR__ . '/../config/database.php';
 
-// Cek login dan role
+// Cek login dan harus customer
 if (!isLoggedIn() || !isCustomer()) {
     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
-// if (!isLoggedIn() || hasRole('kantin')) {
-//     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
-// }
+$conn = getDBConnection();
+
+// Ambil customer_id dari session (INI YANG KAMU KURANG)
+$customer_id = (int)($_SESSION['user_id'] ?? 0);
+if ($customer_id <= 0) {
+    die("Error: Session customer tidak valid. Silakan login ulang.");
+}
+
+$today = date('Y-m-d');
+
+/**
+ * =========================
+ * 1) LAST ORDER (pesanan terakhir)
+ * =========================
+ */
+$last_order_query = "SELECT 
+        o.id,
+        o.order_number,
+        o.total_amount,
+        o.status,
+        o.payment_status,
+        o.order_type,
+        o.created_at,
+        ci.canteen_name
+    FROM orders o
+    LEFT JOIN canteen_info ci ON o.canteen_info_id = ci.id
+    WHERE o.customer_id = $customer_id
+    ORDER BY o.created_at DESC
+    LIMIT 1";
+
+$last_order_result = $conn->query($last_order_query);
+$last_order = ($last_order_result && $last_order_result->num_rows > 0)
+    ? $last_order_result->fetch_assoc()
+    : null;
+
+/**
+ * =========================
+ * 2) STATUS COUNT (ringkasan status)
+ * =========================
+ */
+$status_counts = [
+    'pending' => 0,
+    'processing' => 0,
+    'ready' => 0,
+    'completed' => 0,
+    'cancelled' => 0
+];
+
+$status_count_query = "SELECT status, COUNT(*) AS cnt
+    FROM orders
+    WHERE customer_id = $customer_id
+    GROUP BY status";
+
+$status_count_result = $conn->query($status_count_query);
+if ($status_count_result) {
+    while ($row = $status_count_result->fetch_assoc()) {
+        $st = $row['status'];
+        if (isset($status_counts[$st])) {
+            $status_counts[$st] = (int)$row['cnt'];
+        }
+    }
+}
+
+/**
+ * =========================
+ * 3) RECENT ORDERS (5 terakhir)
+ * =========================
+ */
+$recent_orders_query = "SELECT 
+        o.id,
+        o.order_number,
+        o.total_amount,
+        o.status,
+        o.created_at,
+        ci.canteen_name
+    FROM orders o
+    LEFT JOIN canteen_info ci ON o.canteen_info_id = ci.id
+    WHERE o.customer_id = $customer_id
+    ORDER BY o.created_at DESC
+    LIMIT 5";
+
+$recent_orders_result = $conn->query($recent_orders_query);
+
+// badge mapping
+$status_class = [
+    'pending' => 'warning',
+    'processing' => 'info',
+    'ready' => 'primary',
+    'completed' => 'success',
+    'cancelled' => 'danger'
+];
+$status_text = [
+    'pending' => 'Pending',
+    'processing' => 'Diproses',
+    'ready' => 'Siap',
+    'completed' => 'Selesai',
+    'cancelled' => 'Dibatalkan'
+];
 
 require_once __DIR__ . '/../includes/header.php';
-
-$conn = getDBConnection();
-$user_id = $_SESSION['user_id'];
-
-// 1. INFO KANTIN
-$canteen_query = "SELECT * FROM canteen_info LIMIT 1";
-$canteen_result = $conn->query($canteen_query);
-$canteen = $canteen_result->fetch_assoc();
-
-// 2. MENU REKOMENDASI (menu terlaris minggu ini)
-$recommended_query = "SELECT 
-    m.id,
-    m.name,
-    m.description,
-    m.price,
-    m.image_url,
-    m.stock,
-    m.is_available,
-    c.name as category_name,
-    COUNT(oi.id) as order_count
-FROM menus m
-LEFT JOIN categories c ON m.category_id = c.id
-LEFT JOIN order_items oi ON m.id = oi.menu_id
-LEFT JOIN orders o ON oi.order_id = o.id 
-    AND o.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-    AND o.status = 'completed'
-WHERE m.deleted_at IS NULL AND m.is_available = TRUE AND m.stock > 0
-GROUP BY m.id
-ORDER BY order_count DESC, m.created_at DESC
-LIMIT 6";
-$recommended_result = $conn->query($recommended_query);
-
-// 3. PESANAN TERAKHIR USER
-$last_order_query = "SELECT 
-    o.id,
-    o.order_number,
-    o.total_amount,
-    o.status,
-    o.created_at
-FROM orders o
-WHERE o.customer_id = $customer_id
-ORDER BY o.created_at DESC
-LIMIT 1";
-$last_order_result = $conn->query($last_order_query);
-$last_order = $last_order_result->fetch_assoc();
-
-// 4. KATEGORI
-$categories_query = "SELECT * FROM categories ORDER BY name ASC";
-$categories_result = $conn->query($categories_query);
-
-$conn->close();
 ?>
 
-<!-- GREETING -->
-<div class="container">
-<div class="row mb-4"  style="margin-left:25px">
-    <div class="col" style="padding: -10px;">
-        <h2>👋 Halo, <?php echo htmlspecialchars($_SESSION['name']); ?>!</h2>
-        <p class="text-muted">Selamat datang di Kantin Kampus. Mau pesan apa hari ini?</p>
-    </div>
-</div>
-
-<!-- SEARCH BAR -->
 <div class="row mb-4">
-    <div class="col-md-8 mx-auto">
-        <div class="search-wrapper">
-            <input type="text" class="form-control form-control-lg" 
-                   id="searchMenu" placeholder="Cari menu makanan atau minuman...">
-            <i class="bi bi-search"></i>
-        </div>
-    </div>
-</div>
-
-<!-- KATEGORI FILTER -->
-<div class="row mb-4">
-    <div class="col text-center">
-        <h5 class="mb-3">📂 Kategori Menu</h5>
-        <div>
-            <a href="/proyek-akhir-kantin-rpl/menu/index.php" class="category-badge">
-                <i class="bi bi-grid"></i> Semua Menu
-            </a>
-            <?php while ($cat = $categories_result->fetch_assoc()): ?>
-                <a href="/proyek-akhir-kantin-rpl/menu/index.php?category=<?php echo $cat['id']; ?>" 
-                   class="category-badge">
-                    <?php
-                    $icons = [
-                        'Makanan' => 'bi-egg-fried',
-                        'Minuman' => 'bi-cup-straw',
-                        'Snack' => 'bi-box'
-                    ];
-                    $icon = $icons[$cat['name']] ?? 'bi-circle';
-                    ?>
-                    <i class="bi <?php echo $icon; ?>"></i> 
-                    <?php echo htmlspecialchars($cat['name']); ?>
-                </a>
-            <?php endwhile; ?>
-        </div>
-    </div>
-</div>
-
-<!-- MENU REKOMENDASI -->
-<div class="row" style="margin-left: 25px">
     <div class="col">
-        <h5 class="">⭐ Menu Rekomendasi</h5>
+        <h2><i class="bi bi-house"></i> Dashboard Customer</h2>
+        <p class="text-muted">Selamat datang, <?php echo htmlspecialchars($_SESSION['name'] ?? 'Customer'); ?> 👋</p>
     </div>
-</div>
-
-<div class="row mb-4">
-    <?php if ($recommended_result->num_rows > 0): ?>
-        <?php while ($menu = $recommended_result->fetch_assoc()): ?>
-            <div class="col-md-4 col-lg-2 mb-3">
-                <div class="card menu-card h-100">
-                    <?php if ($menu['image_url']): ?>
-                        <img src="/proyek-akhir-kantin-rpl/uploads/menus/<?php echo htmlspecialchars($menu['image_url']); ?>" 
-                             class="card-img-top" alt="<?php echo htmlspecialchars($menu['name']); ?>">
-                    <?php else: ?>
-                        <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" 
-                             style="height: 200px;">
-                            <i class="bi bi-image text-white" style="font-size: 3rem;"></i>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <span class="badge bg-success position-absolute" style="top: 10px; left: 10px;">
-                        <?php echo htmlspecialchars($menu['category_name']); ?>
-                    </span>
-                    
-                    <div class="card-body">
-                        <h6 class="card-title"><?php echo htmlspecialchars($menu['name']); ?></h6>
-                        <p class="price mb-2"><?php echo formatRupiah($menu['price']); ?></p>
-                        <p class="stock-info mb-3">
-                            <i class="bi bi-box"></i> Stok: <?php echo $menu['stock']; ?>
-                        </p>
-                        
-                        <?php if ($menu['is_available'] && $menu['stock'] > 0): ?>
-                            <button class="btn btn-primary btn-sm w-100 add-to-cart" 
-                                    data-id="<?php echo $menu['id']; ?>"
-                                    data-name="<?php echo htmlspecialchars($menu['name']); ?>"
-                                    data-price="<?php echo $menu['price']; ?>">
-                                <i class="bi bi-cart-plus"></i> Tambah
-                            </button>
-                        <?php else: ?>
-                            <button class="btn btn-secondary btn-sm w-100" disabled>
-                                <i class="bi bi-x-circle"></i> Habis
-                            </button>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        <?php endwhile; ?>
-    <?php else: ?>
-        <div class="col">
-            <div class="empty-state">
-                <i class="bi bi-inbox"></i>
-                <h5>Belum Ada Menu</h5>
-                <p>Menu akan segera tersedia</p>
-            </div>
-        </div>
-    <?php endif; ?>
-</div>
-
-<div class="row mb-4">
-    <div class="col text-center">
-        <a href="/proyek-akhir-kantin-rpl/menu/index.php" class="btn btn-outline-primary">
-            Lihat Semua Menu <i class="bi bi-arrow-right"></i>
+    <div class="col-auto">
+        <a href="/proyek-akhir-kantin-rpl/menu/index.php" class="btn btn-primary">
+            <i class="bi bi-grid"></i> Lihat Menu
         </a>
     </div>
 </div>
 
-<!-- INFO KANTIN & PESANAN TERAKHIR -->
-<div class="row">
-    <!-- PESANAN TERAKHIR -->
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h6 class="mb-0"><i class="bi bi-clock-history"></i> Pesanan Terakhir Saya</h6>
+<!-- Ringkasan Status -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <h3 class="text-warning"><?php echo $status_counts['pending']; ?></h3>
+                <p class="mb-0">Pending</p>
             </div>
-            <div class="card-body">
-                <?php if ($last_order): ?>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong><?php echo htmlspecialchars($last_order['order_number']); ?></strong>
-                        <?php
-                        $status_class = [
-                            'pending' => 'warning',
-                            'processing' => 'info',
-                            'ready' => 'primary',
-                            'completed' => 'success',
-                            'cancelled' => 'danger'
-                        ];
-                        $status_text = [
-                            'pending' => 'Pending',
-                            'processing' => 'Diproses',
-                            'ready' => 'Siap Diambil',
-                            'completed' => 'Selesai',
-                            'cancelled' => 'Dibatalkan'
-                        ];
-                        ?>
-                        <span class="badge bg-<?php echo $status_class[$last_order['status']]; ?>">
-                            <?php echo $status_text[$last_order['status']]; ?>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <h3 class="text-info"><?php echo $status_counts['processing']; ?></h3>
+                <p class="mb-0">Diproses</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <h3 class="text-primary"><?php echo $status_counts['ready']; ?></h3>
+                <p class="mb-0">Siap</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <h3 class="text-success"><?php echo $status_counts['completed']; ?></h3>
+                <p class="mb-0">Selesai</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pesanan Terakhir -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-receipt"></i> Pesanan Terakhir</h5>
+        <a href="/proyek-akhir-kantin-rpl/order/status.php" class="btn btn-sm btn-outline-primary">
+            Lihat Semua
+        </a>
+    </div>
+
+    <div class="card-body">
+        <?php if ($last_order): ?>
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+                <div>
+                    <strong><?php echo htmlspecialchars($last_order['order_number']); ?></strong>
+                    <div class="text-muted small">
+                        Kantin: <?php echo htmlspecialchars($last_order['canteen_name'] ?? '-'); ?>
+                    </div>
+                    <div class="text-muted small">
+                        Waktu: <?php echo formatTanggal($last_order['created_at']); ?> • <?php echo formatWaktu($last_order['created_at']); ?>
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <div class="mb-1">
+                        <span class="badge bg-<?php echo $status_class[$last_order['status']] ?? 'secondary'; ?>">
+                            <?php echo $status_text[$last_order['status']] ?? htmlspecialchars($last_order['status']); ?>
+                        </span>
+                        <span class="badge bg-secondary">
+                            <?php echo htmlspecialchars($last_order['payment_status'] ?? ''); ?>
                         </span>
                     </div>
-                    <p class="mb-2">
-                        Total: <strong><?php echo formatRupiah($last_order['total_amount']); ?></strong>
-                    </p>
-                    <p class="text-muted small mb-3">
-                        <i class="bi bi-calendar"></i> 
-                        <?php echo formatTanggal($last_order['created_at']); ?> 
-                        <?php echo formatWaktu($last_order['created_at']); ?>
-                    </p>
-                    <a href="/proyek-akhir-kantin-rpl/order/status.php?id=<?php echo $last_order['id']; ?>" 
-                       class="btn btn-sm btn-primary">
-                        Lihat Detail
-                    </a>
-                <?php else: ?>
-                    <p class="text-muted mb-0">Belum ada pesanan</p>
-                    <a href="/proyek-akhir-kantin-rpl/menu/index.php" class="btn btn-sm btn-primary mt-2">
-                        Pesan Sekarang
-                    </a>
-                <?php endif; ?>
-                
-                <hr>
-                
-                <a href="/proyek-akhir-kantin-rpl/order/status.php" class="btn btn-sm btn-outline-primary w-100">
-                    Lihat Riwayat Lengkap
-                </a>
+                    <div class="fs-5">
+                        <strong><?php echo formatRupiah($last_order['total_amount']); ?></strong>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-    
-    <!-- INFO KANTIN -->
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Info Kantin</h6>
+        <?php else: ?>
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-inbox fs-1"></i>
+                <h6 class="mt-2">Belum ada pesanan</h6>
+                <p class="mb-0">Silakan pesan menu dulu 😊</p>
             </div>
-            <div class="card-body">
-                <?php if ($canteen): ?>
-                    <h5><?php echo htmlspecialchars($canteen['canteen_name']); ?></h5>
-                    
-                    <p class="mb-2">
-                        <i class="bi bi-geo-alt text-danger"></i>
-                        <strong>Lokasi:</strong> 
-                        <?php echo htmlspecialchars($canteen['location']); ?>
-                    </p>
-                    
-                    <p class="mb-2">
-                        <i class="bi bi-clock text-primary"></i>
-                        <strong>Jam Buka:</strong> 
-                        <?php echo htmlspecialchars($canteen['opening_hours']); ?>
-                    </p>
-                    
-                    <p class="mb-2">
-                        <i class="bi bi-telephone text-success"></i>
-                        <strong>Telepon:</strong> 
-                        <?php echo htmlspecialchars($canteen['phone']); ?>
-                    </p>
-                    
-                    <?php if ($canteen['description']): ?>
-                        <hr>
-                        <p class="text-muted small mb-0">
-                            <?php echo htmlspecialchars($canteen['description']); ?>
-                        </p>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <p class="text-muted mb-0">Informasi kantin belum tersedia</p>
-                <?php endif; ?>
-            </div>
-        </div>
+        <?php endif; ?>
     </div>
 </div>
-</div>
-<!-- Search & Add to Cart Scripts -->
-<script>
-    // Search Menu
-    document.getElementById('searchMenu').addEventListener('keyup', function(e) {
-        if (e.key === 'Enter') {
-            const keyword = this.value;
-            window.location.href = '/proyek-akhir-kantin-rpl/menu/index.php?search=' + encodeURIComponent(keyword);
-        }
-    });
-    
-    // Add to Cart
-    document.querySelectorAll('.add-to-cart').forEach(button => {
-        button.addEventListener('click', function() {
-            const menuId = this.dataset.id;
-            const menuName = this.dataset.name;
-            const menuPrice = this.dataset.price;
-            
-            // AJAX call to add to cart
-            fetch('/proyek-akhir-kantin-rpl/api/add-to-cart.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    menu_id: menuId,
-                    quantity: 1
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show success message
-                    alert(menuName + ' berhasil ditambahkan ke keranjang!');
-                    // Update cart badge
-                    location.reload();
-                } else {
-                    alert('Gagal menambahkan ke keranjang: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Terjadi kesalahan saat menambahkan ke keranjang');
-            });
-        });
-    });
-</script>
 
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<!-- Riwayat singkat -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Riwayat Terbaru</h5>
+    </div>
+    <div class="card-body">
+        <?php if ($recent_orders_result && $recent_orders_result->num_rows > 0): ?>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>No Order</th>
+                            <th>Kantin</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Waktu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($o = $recent_orders_result->fetch_assoc()): ?>
+                            <tr>
+                                <td><strong><?php echo htmlspecialchars($o['order_number']); ?></strong></td>
+                                <td><?php echo htmlspecialchars($o['canteen_name'] ?? '-'); ?></td>
+                                <td><?php echo formatRupiah($o['total_amount']); ?></td>
+                                <td>
+                                    <span class="badge bg-<?php echo $status_class[$o['status']] ?? 'secondary'; ?>">
+                                        <?php echo $status_text[$o['status']] ?? htmlspecialchars($o['status']); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <small><?php echo formatWaktu($o['created_at']); ?></small>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <p class="text-muted mb-0">Belum ada riwayat pesanan.</p>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?php
+$conn->close();
+require_once __DIR__ . '/../includes/footer.php';
+?>

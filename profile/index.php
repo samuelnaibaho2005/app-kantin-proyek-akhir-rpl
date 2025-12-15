@@ -1,145 +1,166 @@
 <?php
-$page_title = 'Profil';
+$page_title = 'Profil Kantin';
 require_once __DIR__ . '/../config/database.php';
 
-// Harus login
-if (!isLoggedIn()) {
+if (!isLoggedIn() || !isOwner()) {
     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
 
 $conn = getDBConnection();
+$owner_id = (int)($_SESSION['user_id'] ?? 0);
+$canteen_id = (int)(getOwnerCanteenId() ?? 0);
 
-$user_id   = (int)($_SESSION['user_id'] ?? 0);
-$user_type = getUserType(); // 'owner' atau 'customer'
-
-if ($user_id <= 0 || !in_array($user_type, ['owner', 'customer'], true)) {
-    $conn->close();
-    die("Error: Session user tidak valid. Silakan login ulang.");
+if ($owner_id <= 0 || $canteen_id <= 0) {
+    die("Error: Canteen info tidak ditemukan.");
 }
 
-// Tentukan tabel berdasarkan user_type (WHITELIST!)
-$table = ($user_type === 'owner') ? 'owners' : 'customers';
+$errors = [];
+$success = null;
 
-// Ambil data user dari tabel yang sesuai
-$stmt = $conn->prepare("SELECT id, name, email, photo_url, created_at, updated_at FROM {$table} WHERE id = ? LIMIT 1");
-$stmt->bind_param("i", $user_id);
+// ====== SAVE (UPDATE) ======
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $canteen_name   = sanitizeInput($_POST['canteen_name'] ?? '');
+    $location       = sanitizeInput($_POST['location'] ?? '');
+    $opening_hours  = sanitizeInput($_POST['opening_hours'] ?? '');
+    $phone          = sanitizeInput($_POST['phone'] ?? '');
+    $description    = sanitizeInput($_POST['description'] ?? '');
+
+    if ($canteen_name === '') $errors[] = "Nama kantin wajib diisi.";
+
+    // upload logo (opsional)
+    $logo_url = null;
+    if (isset($_FILES['logo']) && $_FILES['logo']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $up = uploadFile($_FILES['logo'], __DIR__ . '/../uploads/logos');
+        if (!$up['success']) {
+            $errors[] = $up['message'];
+        } else {
+            // simpan hanya filename biar konsisten
+            $logo_url = $up['filename'];
+        }
+    }
+
+    if (empty($errors)) {
+        // build query dinamis untuk logo (kalau tidak upload, jangan overwrite)
+        if ($logo_url !== null) {
+            $sql = "UPDATE canteen_info
+                    SET canteen_name=?, location=?, opening_hours=?, phone=?, description=?, logo_url=?, updated_at=NOW()
+                    WHERE id=? AND owner_id=?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "ssssssii",
+                $canteen_name, $location, $opening_hours, $phone, $description, $logo_url,
+                $canteen_id, $owner_id
+            );
+        } else {
+            $sql = "UPDATE canteen_info
+                    SET canteen_name=?, location=?, opening_hours=?, phone=?, description=?, updated_at=NOW()
+                    WHERE id=? AND owner_id=?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "sssssii",
+                $canteen_name, $location, $opening_hours, $phone, $description,
+                $canteen_id, $owner_id
+            );
+        }
+
+        if ($stmt && $stmt->execute()) {
+            $success = "Profil kantin berhasil disimpan.";
+        } else {
+            $errors[] = "Gagal menyimpan: " . htmlspecialchars($conn->error);
+        }
+        if ($stmt) $stmt->close();
+    }
+}
+
+// ====== GET DATA ======
+$stmt = $conn->prepare("SELECT * FROM canteen_info WHERE id=? AND owner_id=? LIMIT 1");
+$stmt->bind_param("ii", $canteen_id, $owner_id);
 $stmt->execute();
-$user_result = $stmt->get_result();
-
-if (!$user_result || $user_result->num_rows === 0) {
-    $stmt->close();
-    $conn->close();
-    die("Error: Data akun tidak ditemukan. Hubungi administrator.");
-}
-
-$user = $user_result->fetch_assoc();
+$res = $stmt->get_result();
+$canteen = $res->fetch_assoc();
 $stmt->close();
 
-// Kalau owner, ambil canteen_info juga
-$canteen = null;
-if ($user_type === 'owner') {
-    $stmt2 = $conn->prepare("SELECT * FROM canteen_info WHERE owner_id = ? LIMIT 1");
-    $stmt2->bind_param("i", $user_id);
-    $stmt2->execute();
-    $canteen_res = $stmt2->get_result();
-    if ($canteen_res && $canteen_res->num_rows > 0) {
-        $canteen = $canteen_res->fetch_assoc();
-        // simpan ke session biar fungsi getOwnerCanteenId() makin stabil
-        $_SESSION['canteen_info_id'] = $canteen['id'];
-    }
-    $stmt2->close();
-}
-
-$conn->close();
-
 require_once __DIR__ . '/../includes/header.php';
-
-$photo = !empty($user['photo_url'])
-    ? $user['photo_url']
-    : 'https://ui-avatars.com/api/?name=' . urlencode($user['name'] ?? 'User') . '&background=0D6EFD&color=fff';
-
 ?>
 
-<div class="row">
-    <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-body text-center">
-                <img src="<?php echo htmlspecialchars($photo); ?>"
-                     alt="Foto Profil"
-                     class="rounded-circle mb-3"
-                     style="width: 110px; height: 110px; object-fit: cover;">
-
-                <h5 class="mb-1"><?php echo htmlspecialchars($user['name'] ?? '-'); ?></h5>
-                <div class="text-muted small mb-2"><?php echo htmlspecialchars($user['email'] ?? '-'); ?></div>
-
-                <span class="badge bg-secondary">
-                    <?php echo ($user_type === 'owner') ? 'Owner' : 'Customer'; ?>
-                </span>
-
-                <hr>
-
-                <div class="text-start small text-muted">
-                    <div class="mb-2">
-                        <strong>Dibuat:</strong>
-                        <?php echo !empty($user['created_at']) ? htmlspecialchars($user['created_at']) : '-'; ?>
-                    </div>
-                    <div>
-                        <strong>Update:</strong>
-                        <?php echo !empty($user['updated_at']) ? htmlspecialchars($user['updated_at']) : '-'; ?>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-8">
-        <div class="card mb-4">
-            <div class="card-header">
-                <strong>Informasi Akun</strong>
-            </div>
-            <div class="card-body">
-                <div class="row mb-2">
-                    <div class="col-sm-4 text-muted">Nama</div>
-                    <div class="col-sm-8"><?php echo htmlspecialchars($user['name'] ?? '-'); ?></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col-sm-4 text-muted">Email</div>
-                    <div class="col-sm-8"><?php echo htmlspecialchars($user['email'] ?? '-'); ?></div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-4 text-muted">Role</div>
-                    <div class="col-sm-8"><?php echo ($user_type === 'owner') ? 'Owner/Pemilik Kantin' : 'Customer'; ?></div>
-                </div>
-            </div>
-        </div>
-
-        <?php if ($user_type === 'owner'): ?>
-            <div class="card">
-                <div class="card-header">
-                    <strong>Informasi Kantin</strong>
-                </div>
-                <div class="card-body">
-                    <?php if ($canteen): ?>
-                        <div class="row mb-2">
-                            <div class="col-sm-4 text-muted">Nama Kantin</div>
-                            <div class="col-sm-8"><?php echo htmlspecialchars($canteen['canteen_name'] ?? '-'); ?></div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-sm-4 text-muted">ID Kantin</div>
-                            <div class="col-sm-8"><?php echo (int)$canteen['id']; ?></div>
-                        </div>
-                    <?php else: ?>
-                        <div class="alert alert-warning mb-0">
-                            Data kantin (canteen_info) belum ditemukan untuk akun owner ini.
-                            Silakan lengkapi data kantin atau hubungi admin.
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-        <?php endif; ?>
-
-    </div>
+<div class="row mb-4">
+  <div class="col">
+    <h2><i class="bi bi-shop"></i> Profil Kantin</h2>
+    <p class="text-muted">Lengkapi data kantin agar tampil rapi di aplikasi.</p>
+  </div>
 </div>
 
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<?php if (!empty($success)): ?>
+  <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+<?php endif; ?>
+
+<?php if (!empty($errors)): ?>
+  <div class="alert alert-danger">
+    <ul class="mb-0">
+      <?php foreach ($errors as $e): ?>
+        <li><?php echo htmlspecialchars($e); ?></li>
+      <?php endforeach; ?>
+    </ul>
+  </div>
+<?php endif; ?>
+
+<div class="card">
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label class="form-label">Nama Kantin *</label>
+        <input type="text" name="canteen_name" class="form-control"
+               value="<?php echo htmlspecialchars($canteen['canteen_name'] ?? ''); ?>" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Lokasi</label>
+        <input type="text" name="location" class="form-control"
+               placeholder="Contoh: Stand A1, Kantin Utama"
+               value="<?php echo htmlspecialchars($canteen['location'] ?? ''); ?>">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Jam Buka</label>
+        <input type="text" name="opening_hours" class="form-control"
+               placeholder="Contoh: 07:00 - 15:00"
+               value="<?php echo htmlspecialchars($canteen['opening_hours'] ?? ''); ?>">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">No. HP</label>
+        <input type="text" name="phone" class="form-control"
+               placeholder="Contoh: 0812xxxx"
+               value="<?php echo htmlspecialchars($canteen['phone'] ?? ''); ?>">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Deskripsi</label>
+        <textarea name="description" class="form-control" rows="3"
+                  placeholder="Contoh: Menyediakan nasi goreng, mie, dll"><?php
+          echo htmlspecialchars($canteen['description'] ?? '');
+        ?></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Logo (opsional)</label>
+        <input type="file" name="logo" class="form-control" accept="image/*">
+        <?php if (!empty($canteen['logo_url'])): ?>
+          <small class="text-muted d-block mt-2">
+            Logo saat ini:
+            <img src="/proyek-akhir-kantin-rpl/uploads/logos/<?php echo htmlspecialchars($canteen['logo_url']); ?>"
+                 alt="logo" style="height:40px;border-radius:8px;">
+          </small>
+        <?php endif; ?>
+      </div>
+
+      <button class="btn btn-primary">
+        <i class="bi bi-save"></i> Simpan
+      </button>
+    </form>
+  </div>
+</div>
+
+<?php
+$conn->close();
+require_once __DIR__ . '/../includes/footer.php';

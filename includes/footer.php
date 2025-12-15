@@ -18,8 +18,5 @@
 <!-- Bootstrap Bundle JS (WAJIB untuk dropdown/navbar toggler/modal) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Optional: custom JS global kamu (kalau ada) -->
-<script src="/proyek-akhir-kantin-rpl/assets/js/app.js"></script>
-
 </body>
 </html>
