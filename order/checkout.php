@@ -55,68 +55,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Process order jika tidak ada error
-    if (empty($errors)) {
-        // Start transaction
-        $conn->begin_transaction();
+    $cart_canteen_id = $_SESSION['cart_canteen_id'];
+
+    // Start transaction
+    $conn->begin_transaction();
+
+    try {
+        $order_number = generateOrderNumber();
         
-        try {
-            // Generate order number
-            $order_number = generateOrderNumber();
+        // Insert order dengan canteen_info_id
+        $insert_order = "INSERT INTO orders 
+            (order_number, customer_id, canteen_info_id, total_amount, order_type, 
+            payment_method, payment_status, status, notes, estimated_time) 
+            VALUES 
+            ('$order_number', $customer_id, $cart_canteen_id, $total, '$order_type', 
+            '$payment_method', 'unpaid', 'pending', '$notes_escaped', 15)";
+        
+        $conn->query($insert_order);
+        $order_id = $conn->insert_id;
+        
+        // Insert order items dengan canteen_info_id yang sama
+        foreach ($cart as $menu_id => $item) {
+            // VALIDASI: Pastikan menu_id punya canteen_info_id yang sama
+            $menu_check = "SELECT canteen_info_id FROM menus WHERE id = $menu_id LIMIT 1";
+            $menu_check_result = $conn->query($menu_check);
+            $menu_data = $menu_check_result->fetch_assoc();
             
-            // Insert order
-            $notes_escaped = escapeString($conn, $notes);
-            $insert_order = "INSERT INTO orders 
-                (order_number, user_id, total_amount, order_type, payment_method, 
-                 payment_status, status, notes, estimated_time) 
+            if ($menu_data['canteen_info_id'] != $cart_canteen_id) {
+                throw new Exception('Data tidak konsisten! Menu tidak dari canteen yang sama.');
+            }
+            
+            $qty = $item['quantity'];
+            $price = $item['price'];
+            $subtotal = $price * $qty;
+            
+            // Insert dengan canteen_info_id
+            $insert_item = "INSERT INTO order_items 
+                (order_id, menu_id, canteen_info_id, quantity, price, subtotal) 
                 VALUES 
-                ('$order_number', $user_id, $total, '$order_type', '$payment_method', 
-                 'unpaid', 'pending', '$notes_escaped', 15)";
+                ($order_id, $menu_id, $cart_canteen_id, $qty, $price, $subtotal)";
             
-            if (!$conn->query($insert_order)) {
-                throw new Exception('Gagal membuat order: ' . $conn->error);
-            }
+            $conn->query($insert_item);
             
-            $order_id = $conn->insert_id;
-            
-            // Insert order items & update stock
-            foreach ($cart as $menu_id => $item) {
-                $qty = $item['quantity'];
-                $price = $item['price'];
-                $subtotal = $price * $qty;
-                
-                // Insert order item
-                $insert_item = "INSERT INTO order_items 
-                    (order_id, menu_id, quantity, price, subtotal) 
-                    VALUES 
-                    ($order_id, $menu_id, $qty, $price, $subtotal)";
-                
-                if (!$conn->query($insert_item)) {
-                    throw new Exception('Gagal menyimpan item: ' . $conn->error);
-                }
-                
-                // Update stock
-                $update_stock = "UPDATE menus SET stock = stock - $qty WHERE id = $menu_id";
-                
-                if (!$conn->query($update_stock)) {
-                    throw new Exception('Gagal update stock: ' . $conn->error);
-                }
-            }
-            
-            // Commit transaction
-            $conn->commit();
-            
-            // Clear cart
-            unset($_SESSION['cart']);
-            
-            // Redirect ke status pesanan
-            setFlashMessage('success', 'Pesanan berhasil dibuat! Nomor order: ' . $order_number);
-            redirect('/proyek-akhir-kantin-rpl/order/status.php?id=' . $order_id);
-            
-        } catch (Exception $e) {
-            // Rollback jika ada error
-            $conn->rollback();
-            $errors[] = $e->getMessage();
+            // Update stock
+            $conn->query("UPDATE menus SET stock = stock - $qty WHERE id = $menu_id");
         }
+        
+        $conn->commit();
+        
+        // Clear cart
+        clearCart();
+        
+        setFlashMessage('success', 'Pesanan berhasil dibuat!');
+        redirect('/proyek-akhir-kantin-rpl/order/status.php?id=' . $order_id);
+        
+    } catch (Exception $e) {
+        $conn->rollback();
+        $errors[] = $e->getMessage();
     }
 }
 

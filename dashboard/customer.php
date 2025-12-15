@@ -3,9 +3,13 @@ $page_title = 'Home';
 require_once __DIR__ . '/../config/database.php';
 
 // Cek login dan role
-if (!isLoggedIn() || hasRole('kantin')) {
+if (!isLoggedIn() || !isCustomer()) {
     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
 }
+
+// if (!isLoggedIn() || hasRole('kantin')) {
+//     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
+// }
 
 require_once __DIR__ . '/../includes/header.php';
 
@@ -48,7 +52,7 @@ $last_order_query = "SELECT
     o.status,
     o.created_at
 FROM orders o
-WHERE o.user_id = $user_id
+WHERE o.customer_id = $customer_id
 ORDER BY o.created_at DESC
 LIMIT 1";
 $last_order_result = $conn->query($last_order_query);

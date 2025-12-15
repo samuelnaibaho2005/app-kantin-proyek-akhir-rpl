@@ -1,10 +1,10 @@
 <?php
 require_once __DIR__ . '/config/database.php';
 
-// Redirect based on login status and role
+// Redirect based on login status and user type
 if (isLoggedIn()) {
-    if (hasRole('kantin')) {
-        redirect('/proyek-akhir-kantin-rpl/dashboard/kantin.php');
+    if (isOwner()) {
+        redirect('/proyek-akhir-kantin-rpl/dashboard/owner.php');
     } else {
         redirect('/proyek-akhir-kantin-rpl/dashboard/customer.php');
     }

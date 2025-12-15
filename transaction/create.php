@@ -43,11 +43,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         $category_escaped = escapeString($conn, $category);
         $description_escaped = escapeString($conn, $description);
-        
+                
+        $canteen_info_id = getOwnerCanteenId();
+
         $insert_query = "INSERT INTO transactions 
-            (transaction_date, type, category, amount, description, created_by) 
+            (transaction_date, type, category, amount, description, canteen_info_id, created_by) 
             VALUES 
-            ('$transaction_date', '$type', '$category_escaped', $amount, '$description_escaped', $created_by)";
+            ('$transaction_date', '$type', '$category_escaped', $amount, '$description_escaped', $canteen_info_id, $created_by)";
         
         if ($conn->query($insert_query)) {
             setFlashMessage('success', 'Transaksi berhasil ditambahkan!');

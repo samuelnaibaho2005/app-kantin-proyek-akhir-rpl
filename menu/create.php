@@ -2,9 +2,14 @@
 $page_title = 'Tambah Menu';
 require_once __DIR__ . '/../config/database.php';
 
-// Cek login dan role
-if (!isLoggedIn() || !hasRole('kantin')) {
+// Cek login dan harus owner
+if (!isLoggedIn() || !isOwner()) {
     redirect('/proyek-akhir-kantin-rpl/auth/login.php');
+}
+
+$canteen_info_id = getOwnerCanteenId();
+if (!$canteen_info_id) {
+    die("Error: Canteen info tidak ditemukan. Hubungi administrator.");
 }
 
 $conn = getDBConnection();
@@ -41,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Upload image
+    $image_filename = null;
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $upload_result = uploadFile($_FILES['image'], __DIR__ . '/../uploads/menus/');
         
@@ -49,20 +55,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $errors[] = $upload_result['message'];
         }
-    }else{
-        $image_filename = null;
     }
     
-    // Insert ke database
+    // Insert ke database dengan canteen_info_id otomatis
     if (empty($errors)) {
         $name_escaped = escapeString($conn, $name);
         $description_escaped = escapeString($conn, $description);
         $image_value = $image_filename ? "'" . escapeString($conn, $image_filename) . "'" : 'NULL';
         
+        // PENTING: canteen_info_id diambil dari owner yang login
         $insert_query = "INSERT INTO menus 
-            (category_id, name, description, price, stock, is_available, image_url) 
+            (category_id, name, description, price, stock, is_available, image_url, canteen_info_id) 
             VALUES 
-            ($category_id, '$name_escaped', '$description_escaped', $price, $stock, $is_available, $image_value)";
+            ($category_id, '$name_escaped', '$description_escaped', $price, $stock, $is_available, $image_value, $canteen_info_id)";
         
         if ($conn->query($insert_query)) {
             setFlashMessage('success', 'Menu berhasil ditambahkan!');
@@ -76,13 +81,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $conn->close();
 require_once __DIR__ . '/../includes/header.php';
 ?>
-<div class="container">
+
 <div class="row mb-4">
     <div class="col">
         <h2><i class="bi bi-plus-circle"></i> Tambah Menu Baru</h2>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/proyek-akhir-kantin-rpl/dashboard/kantin.php">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="/proyek-akhir-kantin-rpl/dashboard/owner.php">Dashboard</a></li>
                 <li class="breadcrumb-item"><a href="/proyek-akhir-kantin-rpl/menu/manage.php">Kelola Menu</a></li>
                 <li class="breadcrumb-item active">Tambah Menu</li>
             </ol>
@@ -126,7 +131,6 @@ require_once __DIR__ . '/../includes/header.php';
                             <select class="form-select" id="category_id" name="category_id" required>
                                 <option value="">Pilih Kategori</option>
                                 <?php
-                                // Reset pointer
                                 $categories_result->data_seek(0);
                                 while ($cat = $categories_result->fetch_assoc()): 
                                 ?>
@@ -194,7 +198,7 @@ require_once __DIR__ . '/../includes/header.php';
         </form>
     </div>
 </div>
-</div>
+
 <script>
     function previewImage(event) {
         const preview = document.getElementById('preview');
